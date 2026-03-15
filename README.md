@@ -36,11 +36,18 @@ Please, fill the following sections about your project.
 
 ### Related work
 
+The dataset we used is made available by Jeff Sackman and is the most comprehensive tennis dataset available. It has been widely used, notably in [TennisAbstract](https://www.TennisAbstract.com), an online tennis encyclopedia maintained by J. Sackman. The dataset is also used by [Ultimate Tennis Statistics](https://www.ultimatetennisstatistics.com), which displays all kinds of tennis statistics with a simple UI such as a GOAT list, rivalries, rankings, titles, etc.
 
-> - What others have already done with the data?
-> - Why is your approach original?
-> - What source of inspiration do you take? Visualizations that you found on other websites or magazines (might be unrelated to your data).
-> - In case you are using a dataset that you have already explored in another context (ML or ADA course, semester project...), you are required to share the report of that work to outline the differences with the submission for this class.
+The dataset has been used to look at who is the tennis GOAT. For a previous year of this course, [a group](https://com-480-data-visualization.github.io/Racket-Science/Milestones/milestone%203/website/index.html) looked at the GOAT in various different attributes — such as surface, service, doubles, etc — and displays the top players for the selected attribute for a given year.
+
+Our approach is original as we approach we seek to find what characteristics are common the the greatest players and see how these evolved overtime. We aim to find out how the evolution of tennis has impacted the profile of the GOAT, and how different eras or rule changes promoted different styles of play.
+
+Some sources of the inspirations for our visualization are:  
+
+- https://www.bloomberg.com/graphics/2015-auto-sales/  
+- https://www.nytimes.com/interactive/2014/06/13/sports/worldcup/world-cup-balls.html  
+- https://www.nytimes.com/interactive/2014/06/05/upshot/how-the-recession-reshaped-the-economy-in-255-charts.html  
+- [Chart Party: We Decided to Erase the Three-Pointer](https://www.youtube.com/watch?v=hhB1vPM8ItA)
 
 ## Milestone 2 (17th April, 5pm)
 
