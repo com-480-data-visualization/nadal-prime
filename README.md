@@ -23,11 +23,25 @@ Please, fill the following sections about your project.
 >
 > Hint: some good pointers for finding quality publicly available datasets ([Google dataset search](https://datasetsearch.research.google.com/), [Kaggle](https://www.kaggle.com/datasets), [OpenSwissData](https://opendata.swiss/en/), [SNAP](https://snap.stanford.edu/data/) and [FiveThirtyEight](https://data.fivethirtyeight.com/)).
 
+Our primary source is Jeff Sackmann’s ATP repository: https://github.com/JeffSackmann/tennis_atp/tree/master. It provides yearly match-level files from 1968 to the present (plus historical/amateur data) with structured information on players (ID, age, handedness, height, nationality), competition context (tournament level, surface), and performance indicators (e.g., aces, double faults, serve points, break points), when recorded.
+
+We also rely on Jeff Sackmann’s Match Charting Project: https://github.com/JeffSackmann/tennis_MatchChartingProject. This source contains shot-level and tactical metadata for a large set of manually charted matches, including serve direction, return depth, net-point patterns, and point-construction information. It is essential for our problematic because it provides direct proxies for playing style, which are not available in standard ATP match files.
+
+Together, these datasets are appropriate for our objective: `tennis_atp` ensures robust long-term coverage and comparability across eras, while `tennis_MatchChartingProject` enables deeper tactical interpretation of player profiles. The key limitations are heterogeneous completeness across time and selective charting coverage (fewer matches than the full ATP corpus, with uneven representation by period/tournament/player).
+
+Our preprocessing pipeline will restrict the scope to ATP men’s singles matches, align and standardize variables across years and sources, handle missingness and sparsity, and group the data into fixed eras.
+
 ### Problematic
 
 > Frame the general topic of your visualization and the main axis that you want to develop.
 > - What am I trying to show with my visualization?
 > - Think of an overview for the project, your motivation, and the target audience.
+
+Our central research question is: how does the profile of the dominant ATP player change across eras? Rather than producing a single all-time ranking, we analyze how the attributes associated with sustained dominance evolve from the late 1960s to today.
+
+The analysis will be communicated through a combination of complementary visual views, including feature-level plots, player-level comparisons, and longitudinal time-series representations. Across eras, we will compare serve efficiency, number of winners per match, return performance, age, physical characteristics, nationality distribution, and using Match Charting metadata, describe tactical signatures directly as serve direction tendencies, average point duration, return depth behavior, net-point usage to define accurately the best player.
+
+Our working hypothesis is that structural changes in tennis (equipment, training methods, pace of play, and court conditions) shift the feature set that best predicts elite performance. The visualization therefore emphasizes temporal comparison between eras, not a universal definition of greatness. The intended audience includes tennis followers and sports analytics readers but also equipment engineers, coaches and tennis regulators that can all be interested in how the differents decision they take can influence the game.
 
 ### Exploratory Data Analysis
 
