@@ -25,7 +25,7 @@ Please, fill the following sections about your project.
 
 Our primary source is Jeff Sackmann’s ATP repository: https://github.com/JeffSackmann/tennis_atp/tree/master. It provides yearly match-level files from 1968 to the present (plus historical/amateur data) with structured information on players (ID, age, handedness, height, nationality), competition context (tournament level, surface), and performance indicators (e.g., aces, double faults, serve points, break points), when recorded.
 
-We also rely on Jeff Sackmann’s Match Charting Project: https://github.com/JeffSackmann/tennis_MatchChartingProject. This source contains shot-level and tactical metadata for a large set of manually charted matches, including serve direction, return depth, net-point patterns, and point-construction information. It is essential for our problematic because it provides direct proxies for playing style, which are not available in standard ATP match files.
+We also rely on Jeff Sackmann’s Match Charting Project: https://github.com/JeffSackmann/tennis_MatchChartingProject. This source contains shot-level and tactical metadata for a large set of manually charted matches, including serve direction, return depth, net-point patterns, and point-construction information. It is essential to our problem statement because it provides direct proxies for playing style, which are not available in standard ATP match files.
 
 Together, these datasets are appropriate for our objective: `tennis_atp` ensures robust long-term coverage and comparability across eras, while `tennis_MatchChartingProject` enables deeper tactical interpretation of player profiles. The key limitations are heterogeneous completeness across time and selective charting coverage (fewer matches than the full ATP corpus, with uneven representation by period/tournament/player).
 
@@ -39,9 +39,9 @@ Our preprocessing pipeline will restrict the scope to ATP men’s singles matche
 
 Our central research question is: how does the profile of the dominant ATP player change across eras? Rather than producing a single all-time ranking, we analyze how the attributes associated with sustained dominance evolve from the late 1960s to today.
 
-The analysis will be communicated through a combination of complementary visual views, including feature-level plots, player-level comparisons, and longitudinal time-series representations. Across eras, we will compare serve efficiency, number of winners per match, return performance, age, physical characteristics, nationality distribution, and using Match Charting metadata, describe tactical signatures directly as serve direction tendencies, average point duration, return depth behavior, net-point usage to define accurately the best player.
+The analysis will be communicated through a combination of complementary visual views, including feature-level plots, player-level comparisons, and longitudinal time-series representations. We will compare features such as serve efficiency, number of winners per match, return performance, age, physical characteristics, nationality distribution, average point duration, return depth behavior, net-point usage to define accurately the best players across different eras.
 
-Our working hypothesis is that structural changes in tennis (equipment, training methods, pace of play, and court conditions) shift the feature set that best predicts elite performance. The visualization therefore emphasizes temporal comparison between eras, not a universal definition of greatness. The intended audience includes tennis followers and sports analytics readers but also equipment engineers, coaches and tennis regulators that can all be interested in how the differents decision they take can influence the game.
+Our working hypothesis is that structural changes in tennis (equipment, training methods, pace of play, and court conditions) shift the feature set that best predicts elite performance. The visualization therefore emphasizes temporal comparison between eras, not a universal definition of greatness. The intended audience includes tennis followers and sports analytics readers but also equipment engineers, coaches and tennis regulators that can all be interested in how the different decisions they take can influence the game.
 
 ### Exploratory Data Analysis
 
@@ -60,14 +60,14 @@ See [`M1_preprocessing.ipynb`](./M1_preprocessing.ipynb).
 
 The datasets we used are made available by Jeff Sackmann. They have been widely used, notably in TennisAbstract, an online tennis encyclopedia maintained by Sackmann. The website displays information about players, their recent results, and various detailed statistics such as serve speed, winners and unforced errors, rallies, tactics, etc.
 
-The dataset is also used by [Ultimate Tennis Statistics](https://www.ultimatetennisstatistics.com), which displays different tennis statistics such as a GOAT list, rivalries, rankings, and titles. The website features its own GOAT points system, which consists of tallying up tournament match results, rivalries, overall rankings, surface Elo ratings, etc.
+The dataset is also used by [Ultimate Tennis Statistics](https://www.ultimatetennisstatistics.com), which displays different tennis statistics such as a GOAT (Greatest Of All Time) list, rivalries, rankings, and titles. The website features its own GOAT points system, which consists of tallying up tournament match results, rivalries, overall rankings, surface Elo ratings, etc.
 
 
-For a previous year of this course, the group Racket-Science made a visualization that centered around various tennis GOAT rankings. The website uses two main visualizations throughout; by default, each section has a podium which displays the three best players for the selected parameters. One can click to instead display a bubble chart that shows the 10 best players; hovering over a player shows the raw data.
+From a previous year of this course, the group Racket-Science made a visualization that centered around various tennis GOAT rankings. The website uses two main visualizations throughout; by default, each section has a podium which displays the three best players for the selected parameters. One can click to display a bubble chart that shows the 10 best players; hovering over a player shows the raw data.
 
 > - Why is your approach original?  
 
-Our approach is original as we seek to find what characteristics are common to the greatest players and see how these evolved over time. We aim to find out how the evolution of tennis has impacted the profile of the GOAT, and how different eras or rule changes promoted different styles of play.
+Our approach is original as we seek to identify the characteristics of top players and how these evolved over time. We aim to understand how the evolution of tennis has changed the game across eras by comparing match patterns and top-player profiles, and how different eras or rule changes promoted different styles of play.
 
 > - What source of inspiration do you take? Visualizations that you found on other websites or magazines (might be unrelated to your data).  
 
@@ -75,7 +75,7 @@ For our visualization, we aim to make a scrollable timeline that shows the effec
 
 One possible visualization we could make would be inspired by a [NYT interactive page about various economic indicators](https://www.nytimes.com/interactive/2014/06/05/upshot/how-the-recession-reshaped-the-economy-in-255-charts.html). This approach would allow for a clear way to visualize various statistical trends at the same time using colors and tooltips.  
 Another possible visualization would take inspiration from a [Bloomberg article on auto sales](https://www.bloomberg.com/graphics/2015-auto-sales/), to show players as bubbles and create playstyle or stat clusters when scrolling.
-The visualization may also feature pictures the evolution of rackets which have had a big influence on the how the sport has evolved, as is done in a [NYT article that shows the evolution of the football](https://www.nytimes.com/interactive/2014/06/13/sports/worldcup/world-cup-balls.html).  
+The visualization may also feature pictures of the evolution of rackets which have had a big influence on the how the sport has evolved, as is done in a [NYT article that shows the evolution of the football](https://www.nytimes.com/interactive/2014/06/13/sports/worldcup/world-cup-balls.html).  
 
 > - In case you are using a dataset that you have already explored in another context (ML or ADA course, semester project...), you are required to share the report of that work to outline the differences with the submission for this class.
 
