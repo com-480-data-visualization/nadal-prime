@@ -48,20 +48,36 @@ Our working hypothesis is that structural changes in tennis (equipment, training
 > Pre-processing of the data set you chose
 > - Show some basic statistics and get insights about the data
 
+  
+See [`M1_preprocessing.ipynb`](./M1_preprocessing.ipynb).
+
 ### Related work
 
-The dataset we used is made available by Jeff Sackman and is the most comprehensive tennis dataset available. It has been widely used, notably in [TennisAbstract](https://www.TennisAbstract.com), an online tennis encyclopedia maintained by J. Sackman. The dataset is also used by [Ultimate Tennis Statistics](https://www.ultimatetennisstatistics.com), which displays all kinds of tennis statistics with a simple UI such as a GOAT list, rivalries, rankings, titles, etc.
 
-The dataset has been used to look at who is the tennis GOAT. For a previous year of this course, [a group](https://com-480-data-visualization.github.io/Racket-Science/Milestones/milestone%203/website/index.html) looked at the GOAT in various different attributes — such as surface, service, doubles, etc — and displays the top players for the selected attribute for a given year.
+> - What others have already done with the data?
 
-Our approach is original as we approach we seek to find what characteristics are common the the greatest players and see how these evolved overtime. We aim to find out how the evolution of tennis has impacted the profile of the GOAT, and how different eras or rule changes promoted different styles of play.
 
-Some sources of the inspirations for our visualization are:  
 
-- https://www.bloomberg.com/graphics/2015-auto-sales/  
-- https://www.nytimes.com/interactive/2014/06/13/sports/worldcup/world-cup-balls.html  
-- https://www.nytimes.com/interactive/2014/06/05/upshot/how-the-recession-reshaped-the-economy-in-255-charts.html  
-- [Chart Party: We Decided to Erase the Three-Pointer](https://www.youtube.com/watch?v=hhB1vPM8ItA)
+The datasets we used are made available by Jeff Sackmann. They have been widely used, notably in TennisAbstract, an online tennis encyclopedia maintained by Sackmann. The website displays information about players, their recent results, and various detailed statistics such as serve speed, winners and unforced errors, rallies, tactics, etc.
+
+The dataset is also used by [Ultimate Tennis Statistics](https://www.ultimatetennisstatistics.com), which displays different tennis statistics such as a GOAT list, rivalries, rankings, and titles. The website features its own GOAT points system, which consists of tallying up tournament match results, rivalries, overall rankings, surface Elo ratings, etc.
+
+
+For a previous year of this course, the group Racket-Science made a visualization that centered around various tennis GOAT rankings. The website uses two main visualizations throughout; by default, each section has a podium which displays the three best players for the selected parameters. One can click to instead display a bubble chart that shows the 10 best players; hovering over a player shows the raw data.
+
+> - Why is your approach original?  
+
+Our approach is original as we seek to find what characteristics are common to the greatest players and see how these evolved over time. We aim to find out how the evolution of tennis has impacted the profile of the GOAT, and how different eras or rule changes promoted different styles of play.
+
+> - What source of inspiration do you take? Visualizations that you found on other websites or magazines (might be unrelated to your data).  
+
+For our visualization, we aim to make a scrollable timeline that shows the effective styles of play for each period and explains why the evolution may have happened. 
+
+One possible visualization we could make would be inspired by a [NYT interactive page about various economic indicators](https://www.nytimes.com/interactive/2014/06/05/upshot/how-the-recession-reshaped-the-economy-in-255-charts.html). This approach would allow for a clear way to visualize various statistical trends at the same time using colors and tooltips.  
+Another possible visualization would take inspiration from a [Bloomberg article on auto sales](https://www.bloomberg.com/graphics/2015-auto-sales/), to show players as bubbles and create playstyle or stat clusters when scrolling.
+The visualization may also feature pictures the evolution of rackets which have had a big influence on the how the sport has evolved, as is done in a [NYT article that shows the evolution of the football](https://www.nytimes.com/interactive/2014/06/13/sports/worldcup/world-cup-balls.html).  
+
+> - In case you are using a dataset that you have already explored in another context (ML or ADA course, semester project...), you are required to share the report of that work to outline the differences with the submission for this class.
 
 ## Milestone 2 (17th April, 5pm)
 
