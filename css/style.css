@@ -203,24 +203,24 @@ body {
 }
 
 .era-box-1::before {
-    background-image: url('../borg.png');
+    background-image: url('../images/borg.png');
 }
 
 .era-box-2::before {
-    background-image: url('../edberg.png');
+    background-image: url('../images/edberg.png');
     background-position: center top;
 }
 
 .era-box-3::before {
-    background-image: url('../sampras_agassi.png');
+    background-image: url('../images/sampras_agassi.png');
 }
 
 .era-box-4::before {
-    background-image: url('../bigthree.png');
+    background-image: url('../images/bigthree.png');
 }
 
 .era-box-5::before {
-    background-image: url('../modern.png');
+    background-image: url('../images/modern.png');
 }
 
 .era-title {
