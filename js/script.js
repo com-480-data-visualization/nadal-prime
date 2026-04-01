@@ -80,8 +80,37 @@ const eraData = {
 // Initialize events on page load
 document.addEventListener('DOMContentLoaded', () => {
     initializeChartPlaceholders();
+    initializeSankeySkeletons();
     addScrollAnimations();
 });
+
+function initializeSankeySkeletons() {
+    const sankeyContainers = document.querySelectorAll('.sankey-flows');
+
+    sankeyContainers.forEach((container) => {
+        container.innerHTML = `
+            <svg class="sankey-svg" viewBox="0 0 600 320" preserveAspectRatio="none" aria-hidden="true">
+                <rect class="sankey-node left l1" x="6" y="8" width="44" height="44"></rect>
+                <rect class="sankey-node left l2" x="6" y="64" width="44" height="44"></rect>
+                <rect class="sankey-node left l3" x="6" y="120" width="44" height="44"></rect>
+                <rect class="sankey-node left l4" x="6" y="176" width="44" height="44"></rect>
+                <rect class="sankey-node left l5" x="6" y="232" width="44" height="44"></rect>
+
+                <rect class="sankey-node right r1" x="550" y="44" width="44" height="92"></rect>
+                <rect class="sankey-node right r2" x="550" y="168" width="44" height="108"></rect>
+
+                <path class="sankey-link s1" d="M50 30 C210 30, 390 70, 550 70"></path>
+                <path class="sankey-link s2" d="M50 86 C210 86, 390 106, 550 106"></path>
+                <path class="sankey-link s3" d="M50 142 C210 142, 390 90, 550 88"></path>
+                <path class="sankey-link s4" d="M50 198 C210 198, 390 230, 550 230"></path>
+                <path class="sankey-link s5" d="M50 254 C210 254, 390 244, 550 244"></path>
+                <path class="sankey-link s6" d="M50 30 C210 30, 390 214, 550 214"></path>
+                <path class="sankey-link s7" d="M50 142 C210 142, 390 198, 550 198"></path>
+                <path class="sankey-link s8" d="M50 198 C210 198, 390 104, 550 104"></path>
+            </svg>
+        `;
+    });
+}
 
 // Initialize chart placeholders with D3
 function initializeChartPlaceholders() {
