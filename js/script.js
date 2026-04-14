@@ -160,7 +160,7 @@ function createHistogram(container, data){
         .domain([0, d3.max(data.players, d => d.points) * 1.1]);
     const colorScale = d3.scaleSequential()
         .domain([1, 10])
-        .interpolator(d3.interpolateBlues);
+        .interpolator(d3.interpolatePlasma);
     
     g.selectAll('.bar')
         .data(data.players)
