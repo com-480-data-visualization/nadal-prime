@@ -63,16 +63,16 @@ const eraData={
     era5:{
         name: "Modern Era (2020-Present)",
         players: [
-            { rank: 1, name: "Novak Djokovic", points: 5400 },
-            { rank: 2, name: "Rafael Nadal", points: 4600 },
-            { rank: 3, name: "Daniil Medvedev", points: 3800 },
-            { rank: 4, name: "Dominic Thiem", points: 3200 },
-            { rank: 5, name: "Roger Federer", points: 3000 },
-            { rank: 6, name: "Stefanos Tsitsipas", points: 2800 }, 
-            { rank: 7, name: "Alexander Zverev", points: 2400 }, 
-            { rank: 8, name: "Matteo Berrettini", points: 2200 },
-            { rank: 9, name: "Diego Schwartzman", points: 2000 },
-            { rank: 10, name: "Gael Monfils", points: 1800 }
+            { rank: 1, name: "Carlos Alcaraz", points: 12050 },
+            { rank: 2, name: "Jannik Sinner", points: 11500 },
+            { rank: 3, name: "Alexander Zverev", points: 5110 },
+            { rank: 4, name: "Novak Djokovic", points: 4820 },
+            { rank: 5, name: "Felix Augier-Aliassime", points: 4190 },
+            { rank: 6, name: "Taylor Fritz", points: 4085 }, 
+            { rank: 7, name: "Alex De Minaur", points: 4080 }, 
+            { rank: 8, name: "Lorenzo Musetti", points: 3990 },
+            { rank: 9, name: "Ben Shelton", points: 3960 },
+            { rank: 10, name: "Jack Draper", points: 2990 }
         ]
     }
 };
