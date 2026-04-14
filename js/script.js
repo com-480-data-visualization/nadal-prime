@@ -1,4 +1,4 @@
-// Era data for placeholder charts
+// Era data: the ATP point are indicative (skeleton plot)
 const eraData={
     era1:{
         name: "Open Era Foundations (1968-1979)",
