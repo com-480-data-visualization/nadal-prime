@@ -83,7 +83,7 @@ The visualization may also feature pictures of the evolution of rackets which ha
 
 **10% of the final grade**
 
-See [`Milestone_2/Milestone_2.pdf`](./Milestone%202/Milestone%202.pdf).
+See [`Milestone_2/Milestone_2.pdf`](./Milestone_2/Milestone_2.pdf).
 
 
 ## Milestone 3 (29th May, 5pm)
