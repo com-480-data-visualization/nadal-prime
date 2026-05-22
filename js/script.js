@@ -292,7 +292,9 @@ async function initializeRallyStory() {
             rallyData,
             scatterChart,
             histogramChart,
-            steps: Array.from(document.querySelectorAll(".rally-step"))
+            steps: Array.from(document.querySelectorAll(".rally-step")),
+            visual: document.querySelector(".rally-visual-sticky"),
+            transitionTimer: null
         };
 
         state.steps.forEach((step) => {
@@ -375,7 +377,7 @@ function splitCsvLine(line) {
 }
 
 function prepareRallyData(shotsRows, atpRows) {
-    const pointsByPlayerEra = buildAtpPointLookup(atpRows);
+    const strengthByPlayerEra = buildPlayerStrengthLookup(atpRows);
     const profileMap = new Map();
 
     shotsRows.forEach((row) => {
@@ -419,6 +421,11 @@ function prepareRallyData(shotsRows, atpRows) {
             shotPercentages[type.key] = (profile.counts[type.key] / denominator) * 100;
         });
 
+        const strength = strengthByPlayerEra.get(profile.key);
+        const pointsFromRanking = strength?.points || 0;
+        const rankEstimate = strength?.bestRank ? rankToPointEstimate(strength.bestRank) : null;
+        const atpPoints = pointsFromRanking > 0 ? pointsFromRanking : rankEstimate;
+
         return {
             ...profile,
             era: ERA_BY_ID[profile.eraId],
@@ -426,7 +433,9 @@ function prepareRallyData(shotsRows, atpRows) {
             totalTypeShots,
             shotPercentages,
             volleyPct: shotPercentages.Vo_shots,
-            atpPoints: pointsByPlayerEra.get(profile.key) || null
+            atpPoints,
+            pointsEstimated: pointsFromRanking <= 0 && Number.isFinite(rankEstimate),
+            bestRank: strength?.bestRank || null
         };
     }).filter((profile) => profile.totalTypeShots > 0);
 
@@ -440,7 +449,7 @@ function prepareRallyData(shotsRows, atpRows) {
     };
 }
 
-function buildAtpPointLookup(rows) {
+function buildPlayerStrengthLookup(rows) {
     const lookup = new Map();
 
     rows.forEach((row) => {
@@ -451,27 +460,38 @@ function buildAtpPointLookup(rows) {
             return;
         }
 
-        addPointRecord(lookup, era.id, row.winner_name, row.winner_rank_points);
-        addPointRecord(lookup, era.id, row.loser_name, row.loser_rank_points);
+        addStrengthRecord(lookup, era.id, row.winner_name, row.winner_rank_points, row.winner_rank);
+        addStrengthRecord(lookup, era.id, row.loser_name, row.loser_rank_points, row.loser_rank);
     });
 
     return lookup;
 }
 
-function addPointRecord(lookup, eraId, player, pointsValue) {
+function addStrengthRecord(lookup, eraId, player, pointsValue, rankValue) {
     const points = toNumber(pointsValue);
+    const rank = toNumber(rankValue);
     const normalizedPlayer = normalizeName(player);
 
-    if (!normalizedPlayer || points <= 0) {
+    if (!normalizedPlayer) {
         return;
     }
 
     const key = `${eraId}|${normalizedPlayer}`;
-    const previous = lookup.get(key) || 0;
+    const previous = lookup.get(key) || { points: 0, bestRank: null };
 
-    if (points > previous) {
-        lookup.set(key, points);
+    if (points > previous.points) {
+        previous.points = points;
     }
+
+    if (rank > 0 && (!previous.bestRank || rank < previous.bestRank)) {
+        previous.bestRank = rank;
+    }
+
+    lookup.set(key, previous);
+}
+
+function rankToPointEstimate(rank) {
+    return Math.round(5600 / Math.sqrt(Math.max(rank, 1)));
 }
 
 function buildShotDistributions(profiles) {
@@ -593,7 +613,7 @@ function createScatterChart(host, rallyData) {
         y: margin.top + innerHeight / 2,
         transform: `rotate(-90 18 ${margin.top + innerHeight / 2})`,
         "text-anchor": "middle"
-    }, "Peak ATP points in era"));
+    }, "ATP points or rank-derived estimate"));
 
     svg.appendChild(grid);
     svg.appendChild(axes);
@@ -632,6 +652,9 @@ function createScatterChart(host, rallyData) {
         circles,
         xScale,
         yScale,
+        width,
+        height,
+        margin,
         rallyData
     };
 }
@@ -675,10 +698,11 @@ function updateScatterChart(chart, selectedEra) {
         const circle = chart.circles.get(profile.key);
         const isActive = isGlobal || activeKeys.has(profile.key);
 
-        circle.setAttribute("opacity", isGlobal ? "0.62" : (isActive ? "0.84" : "0.08"));
-        circle.setAttribute("r", isGlobal ? "3.8" : (isActive ? "5.4" : "2.7"));
+        circle.setAttribute("opacity", isGlobal ? "0.62" : (isActive ? "0.84" : "0.18"));
+        circle.setAttribute("r", isGlobal ? "3.8" : (isActive ? "5.4" : "3.1"));
         circle.setAttribute("stroke", isActive && !isGlobal ? "#101622" : "#fff");
         circle.setAttribute("stroke-width", isActive && !isGlobal ? "1.6" : "1.1");
+        circle.style.filter = isActive && !isGlobal ? "drop-shadow(0 2px 4px rgba(0, 0, 0, 0.18))" : "none";
 
         if (isActive && !isGlobal) {
             chart.pointsLayer.appendChild(circle);
@@ -692,13 +716,76 @@ function updateScatterChart(chart, selectedEra) {
         .slice(0, isGlobal ? 4 : 5);
 
     labels.forEach((profile) => {
+        const placement = placeScatterLabel(profile, labels, chart);
+
+        chart.labelsLayer.appendChild(createSvg("line", {
+            class: "scatter-label-line",
+            x1: placement.pointX,
+            y1: placement.pointY,
+            x2: placement.anchor === "start" ? placement.x - 5 : placement.x + 5,
+            y2: placement.y - 4,
+            opacity: isGlobal ? "0.34" : "0.5"
+        }));
+
         chart.labelsLayer.appendChild(createSvg("text", {
             class: "scatter-label",
-            x: chart.xScale(profile.volleyPct) + 8,
-            y: chart.yScale(profile.atpPoints) - 8,
+            x: placement.x,
+            y: placement.y,
+            "text-anchor": placement.anchor,
             opacity: isGlobal ? "0.72" : "0.92"
         }, profile.player));
     });
+}
+
+function placeScatterLabel(profile, labels, chart) {
+    const labelHeight = 16;
+    const pointX = chart.xScale(profile.volleyPct);
+    const pointY = chart.yScale(profile.atpPoints);
+    const sortedLabels = labels
+        .map((label) => ({
+            profile: label,
+            pointX: chart.xScale(label.volleyPct),
+            pointY: chart.yScale(label.atpPoints)
+        }))
+        .sort((a, b) => a.pointY - b.pointY);
+    const placements = sortedLabels.map((label, index) => ({
+        ...label,
+        y: clamp(label.pointY - 8 + (index % 2 ? 5 : -2), chart.margin.top + 18, chart.height - chart.margin.bottom - 8)
+    }));
+
+    for (let index = 1; index < placements.length; index += 1) {
+        if (placements[index].y - placements[index - 1].y < labelHeight) {
+            placements[index].y = placements[index - 1].y + labelHeight;
+        }
+    }
+
+    const overflow = placements[placements.length - 1]?.y - (chart.height - chart.margin.bottom - 8);
+    if (overflow > 0) {
+        placements.forEach((placement) => {
+            placement.y -= overflow;
+        });
+    }
+
+    for (let index = placements.length - 2; index >= 0; index -= 1) {
+        if (placements[index + 1].y - placements[index].y < labelHeight) {
+            placements[index].y = placements[index + 1].y - labelHeight;
+        }
+    }
+
+    const placement = placements.find((item) => item.profile.key === profile.key);
+    const estimatedWidth = clamp(profile.player.length * 6.2, 54, 126);
+    const preferLeft = pointX > chart.width - chart.margin.right - estimatedWidth - 24;
+    const x = preferLeft
+        ? Math.max(chart.margin.left + estimatedWidth, pointX - 11)
+        : Math.min(chart.width - chart.margin.right - estimatedWidth, pointX + 11);
+
+    return {
+        pointX,
+        pointY,
+        x,
+        y: placement?.y || pointY - 8,
+        anchor: preferLeft ? "end" : "start"
+    };
 }
 
 function createHistogramChart(host, rallyData) {
@@ -868,6 +955,18 @@ function setActiveRallyEra(state, eraId, force = false) {
     }
 
     state.activeEra = eraId;
+    const era = ERA_BY_ID[eraId];
+
+    if (state.visual) {
+        state.visual.dataset.activeEra = eraId;
+        state.visual.style.setProperty("--era-color", era?.color || "#1d5f9f");
+        state.visual.classList.add("is-transitioning");
+        window.clearTimeout(state.transitionTimer);
+        state.transitionTimer = window.setTimeout(() => {
+            state.visual.classList.remove("is-transitioning");
+        }, 420);
+    }
+
     state.steps.forEach((step) => {
         step.classList.toggle("is-active", step.dataset.era === eraId);
     });
@@ -885,6 +984,7 @@ function updateRallyText(rallyData, eraId) {
     const selectedProfiles = eraId === "all"
         ? rallyData.scatterData
         : rallyData.scatterData.filter((profile) => profile.eraId === eraId);
+    const estimatedProfiles = selectedProfiles.filter((profile) => profile.pointsEstimated).length;
     const distribution = rallyData.distributions.get(eraId) || rallyData.distributions.get("all");
     const volleyShare = distribution.values.find((item) => item.key === "Vo_shots")?.value || 0;
     const groundstrokeShare = distribution.values.find((item) => item.key === "Gs_shots")?.value || 0;
@@ -892,23 +992,37 @@ function updateRallyText(rallyData, eraId) {
 
     if (eraId === "all") {
         title.textContent = "Rally profiles across all eras";
-        copy.textContent = `${selectedProfiles.length} player-era profiles are visible. Groundstrokes account for ${formatPercent(groundstrokeShare)} of charted rally shots overall, while volleys account for ${formatPercent(volleyShare)}.`;
-        histogramEra.textContent = "All eras";
+        const estimateNote = estimatedProfiles
+            ? ` ${estimatedProfiles} profiles use rank-derived point estimates where ranking-point fields are missing.`
+            : "";
+        copy.textContent = `${selectedProfiles.length} player-era profiles are visible. Groundstrokes account for ${formatPercent(groundstrokeShare)} of charted rally shots overall, while volleys account for ${formatPercent(volleyShare)}.${estimateNote}`;
+        if (histogramEra) {
+            histogramEra.textContent = "All eras";
+        }
     } else {
         title.textContent = `${era.name} (${era.period})`;
-        copy.textContent = `${selectedProfiles.length} player-era profiles are highlighted. Volleys make up ${formatPercent(volleyShare)} of charted rally shots in this era. ${era.summary}`;
-        histogramEra.textContent = era.name;
+        const estimateNote = estimatedProfiles
+            ? ` ${estimatedProfiles} profiles use rank-derived point estimates because ATP point fields are unavailable for that era.`
+            : "";
+        copy.textContent = `${selectedProfiles.length} player-era profiles are highlighted. Volleys make up ${formatPercent(volleyShare)} of charted rally shots in this era.${estimateNote} ${era.summary}`;
+        if (histogramEra) {
+            histogramEra.textContent = era.name;
+        }
     }
 
     scatterCount.textContent = `${selectedProfiles.length} profiles`;
 }
 
 function getScatterTooltip(profile) {
+    const pointLabel = profile.pointsEstimated
+        ? `ATP point estimate: ${formatNumber(profile.atpPoints)} from best rank #${formatNumber(profile.bestRank)}`
+        : `Peak ATP points: ${formatNumber(profile.atpPoints)}`;
+
     return [
         `<strong>${profile.player}</strong>`,
         `${profile.era.name}, ${profile.era.period}`,
         `Volley shots: ${formatPercent(profile.volleyPct)}`,
-        `Peak ATP points: ${formatNumber(profile.atpPoints)}`,
+        pointLabel,
         `Charted shots: ${formatNumber(profile.totalTypeShots)}`
     ].join("<br>");
 }
@@ -1027,6 +1141,10 @@ function roundValue(value) {
     }
 
     return Math.round(value * 10) / 10;
+}
+
+function clamp(value, min, max) {
+    return Math.min(Math.max(value, min), max);
 }
 
 function showTooltip(event, html) {
