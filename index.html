@@ -123,11 +123,12 @@
 
         <div class="feature-selector" aria-label="Feature family selector">
             <button class="feature-pill active" type="button" data-feature="rally" aria-pressed="true">Rally</button>
+            <button class="feature-pill" type="button" data-feature="service" aria-pressed="false">Service</button>
         </div>
 
         <p class="playstyle-intro">
-            Rally construction is the first lens: how often elite players finished or redirected points with volleys,
-            and how the full shot mix shifted as equipment, strings, athletic preparation, and baseline tactics changed.
+            Elite profiles shift through both rally construction and service patterns: who finishes forward,
+            who controls points immediately after the serve, and how those advantages move across eras.
         </p>
 
         <div class="scrolly-rally">
@@ -182,7 +183,7 @@
 
             <div class="rally-visual-sticky" aria-live="polite">
                 <div class="rally-status">
-                    <p class="status-kicker">Rally feature family</p>
+                    <p class="status-kicker" id="feature-status-kicker">Rally feature family</p>
                     <h3 id="rally-active-title">Loading rally profiles</h3>
                     <p id="rally-active-copy">Preparing player-level shot percentages and ATP point context.</p>
                 </div>
@@ -191,22 +192,27 @@
                     <section class="chart-card">
                         <div class="chart-card-header">
                             <div>
-                                <h4>Volley Shot Percentage vs ATP Points</h4>
-                                <p>Missing ATP points use rank-derived estimates.</p>
+                                <h4 id="scatter-title">Volley Shot Percentage vs ATP Points</h4>
+                                <p id="scatter-subtitle">Missing ATP points use rank-derived estimates.</p>
                             </div>
                             <span id="scatter-count" class="chart-stat">0 profiles</span>
                         </div>
-                        <div id="rally-scatter" class="chart-host" role="img" aria-label="Scatterplot of volley shot percentage versus ATP points"></div>
+                        <div id="rally-scatter" class="chart-host" role="img" aria-label="Scatterplot of selected feature percentage versus ATP points"></div>
                     </section>
 
                     <section class="chart-card">
                         <div class="chart-card-header">
                             <div>
-                                <h4>Shot Type Percentage</h4>
-                                <p>Aggregated rally shot distribution</p>
+                                <h4 id="detail-title">Shot Type Percentage</h4>
+                                <p id="detail-subtitle">Aggregated rally shot distribution</p>
+                            </div>
+                            <div class="detail-mode-selector" id="service-heatmap-mode" hidden aria-label="Service heatmap mode">
+                                <button class="heatmap-mode-button active" type="button" data-mode="inout" aria-pressed="true">In vs Out</button>
+                                <button class="heatmap-mode-button" type="button" data-mode="in" aria-pressed="false">In</button>
+                                <button class="heatmap-mode-button" type="button" data-mode="out" aria-pressed="false">Out</button>
                             </div>
                         </div>
-                        <div id="rally-histogram" class="chart-host" role="img" aria-label="Histogram of shot type percentages"></div>
+                        <div id="rally-histogram" class="chart-host" role="img" aria-label="Feature detail visualization"></div>
                     </section>
                 </div>
             </div>

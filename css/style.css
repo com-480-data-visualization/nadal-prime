@@ -791,17 +791,18 @@ footer p {
 
 .feature-selector {
     display: flex;
+    gap: 8px;
     justify-content: center;
     margin: 0 auto 22px;
 }
 
 .feature-pill {
     appearance: none;
-    border: 1px solid var(--ink-strong);
+    border: 1px solid var(--rule);
     border-radius: 999px;
-    background: var(--ink-strong);
-    color: #fff;
-    cursor: default;
+    background: transparent;
+    color: var(--ink-strong);
+    cursor: pointer;
     font: inherit;
     font-size: 0.86rem;
     font-weight: 700;
@@ -809,6 +810,18 @@ footer p {
     line-height: 1;
     padding: 10px 18px;
     text-transform: uppercase;
+    transition: background 0.24s ease, border-color 0.24s ease, color 0.24s ease;
+}
+
+.feature-pill.active {
+    border-color: var(--ink-strong);
+    background: var(--ink-strong);
+    color: #fff;
+}
+
+.feature-pill:focus {
+    outline: 2px solid var(--accent-news);
+    outline-offset: 3px;
 }
 
 .playstyle-intro {
@@ -939,6 +952,10 @@ footer p {
     gap: 30px;
 }
 
+.rally-visual-sticky[data-feature="service"] .rally-charts {
+    grid-template-columns: minmax(0, 0.88fr) minmax(0, 1.12fr);
+}
+
 .chart-card {
     background: transparent;
     border: 0;
@@ -961,6 +978,46 @@ footer p {
     border-bottom: 1px solid var(--rule);
     margin-bottom: 18px;
     padding-bottom: 12px;
+}
+
+.detail-mode-selector {
+    display: inline-flex;
+    flex: 0 0 auto;
+    gap: 4px;
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    padding: 3px;
+}
+
+.detail-mode-selector[hidden] {
+    display: none;
+}
+
+.heatmap-mode-button {
+    appearance: none;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: #5f5a52;
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.73rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    line-height: 1;
+    padding: 8px 10px;
+    text-transform: uppercase;
+    transition: background 0.22s ease, color 0.22s ease;
+}
+
+.heatmap-mode-button.active {
+    background: var(--ink-strong);
+    color: #fff;
+}
+
+.heatmap-mode-button:focus {
+    outline: 2px solid var(--accent-news);
+    outline-offset: 2px;
 }
 
 .chart-card-header h4 {
@@ -1056,6 +1113,74 @@ footer p {
     fill: #3e4758;
     font-size: 12px;
     font-weight: 700;
+}
+
+.court-surface {
+    fill: #eaf1e7;
+    stroke: #6b765f;
+    stroke-width: 1.6;
+}
+
+.court-line {
+    fill: none;
+    stroke: #ffffff;
+    stroke-width: 2.4;
+    vector-effect: non-scaling-stroke;
+}
+
+.court-line-outer {
+    stroke-width: 3;
+}
+
+.court-center-mark {
+    stroke-width: 2;
+}
+
+.court-net {
+    stroke: #30352e;
+    stroke-linecap: round;
+    stroke-width: 7;
+    vector-effect: non-scaling-stroke;
+}
+
+.court-zone {
+    cursor: pointer;
+    stroke: rgba(255, 255, 255, 0.88);
+    stroke-width: 1.4;
+    transition: fill 0.45s ease, opacity 0.45s ease;
+    vector-effect: non-scaling-stroke;
+}
+
+.court-zone-error {
+    stroke: rgba(115, 37, 32, 0.34);
+}
+
+.court-zone-target {
+    stroke: rgba(34, 83, 130, 0.34);
+}
+
+.court-zone-label {
+    fill: #22261f;
+    font-size: 12px;
+    font-weight: 800;
+    paint-order: stroke;
+    pointer-events: none;
+    stroke: rgba(255, 255, 255, 0.82);
+    stroke-linejoin: round;
+    stroke-width: 4px;
+    text-anchor: middle;
+}
+
+.court-zone-value {
+    fill: #383d34;
+    font-size: 11px;
+    font-weight: 700;
+    paint-order: stroke;
+    pointer-events: none;
+    stroke: rgba(255, 255, 255, 0.82);
+    stroke-linejoin: round;
+    stroke-width: 4px;
+    text-anchor: middle;
 }
 
 .era-legend {
