@@ -108,9 +108,9 @@ body {
 
 .section-title h2 {
     display: inline-block;
-    font-size: clamp(2.1rem, 4.2vw, 3.6rem);
+    font-size: 3.2rem;
     font-weight: 800;
-    letter-spacing: -0.03em;
+    letter-spacing: 0;
     line-height: 1.15;
     color: #2260ff;
 }
@@ -290,7 +290,7 @@ body {
     width: 100%;
     height: 100%;
     background: white;
-    border-radius: 12px;
+    border-radius: 8px;
     padding: 20px;
     display: flex;
     flex-direction: column;
@@ -768,5 +768,361 @@ footer p {
 
     .era-main-card {
         min-height: 260px;
+    }
+}
+
+/* ==================== PLAYSTYLE SCROLLYTELLING ==================== */
+
+.playstyle-container {
+    background: #f6f8fb;
+    padding: 54px 24px 96px;
+}
+
+.playstyle-header {
+    margin-bottom: 18px;
+}
+
+.feature-selector {
+    display: flex;
+    justify-content: center;
+    margin: 0 auto 20px;
+}
+
+.feature-pill {
+    appearance: none;
+    border: 1px solid #1e5bff;
+    border-radius: 999px;
+    background: #1e5bff;
+    color: #fff;
+    cursor: default;
+    font: inherit;
+    font-size: 0.94rem;
+    font-weight: 700;
+    line-height: 1;
+    padding: 12px 22px;
+}
+
+.playstyle-intro {
+    max-width: 880px;
+    margin: 0 auto 34px;
+    color: #4d5565;
+    font-size: 1.04rem;
+    line-height: 1.7;
+    text-align: center;
+}
+
+.scrolly-rally {
+    display: grid;
+    grid-template-columns: minmax(280px, 400px) minmax(0, 1fr);
+    gap: 34px;
+    align-items: start;
+    max-width: 1500px;
+    margin: 0 auto;
+}
+
+.rally-story {
+    display: flex;
+    flex-direction: column;
+    gap: 26vh;
+    padding: 8vh 0 24vh;
+}
+
+.rally-step {
+    min-height: 46vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border-left: 3px solid #cfd6e3;
+    padding: 24px 0 24px 26px;
+    opacity: 0.42;
+    transform: translateX(0);
+    transition: opacity 0.35s ease, transform 0.35s ease, border-color 0.35s ease;
+}
+
+.rally-step:focus {
+    outline: 2px solid #1e5bff;
+    outline-offset: 6px;
+}
+
+.rally-step.is-active {
+    border-color: var(--era-color, #1e5bff);
+    opacity: 1;
+    transform: translateX(6px);
+}
+
+.rally-step-kicker,
+.status-kicker {
+    color: #2260ff;
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.rally-step h3 {
+    color: #171b24;
+    font-size: 1.45rem;
+    line-height: 1.2;
+    margin: 8px 0 12px;
+}
+
+.rally-step p {
+    color: #566072;
+    font-size: 0.98rem;
+    line-height: 1.65;
+}
+
+.rally-visual-sticky {
+    position: sticky;
+    top: 22px;
+    min-height: calc(100vh - 44px);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 16px;
+    padding: 18px 0;
+}
+
+.rally-status {
+    display: grid;
+    gap: 6px;
+}
+
+.rally-status h3 {
+    color: #171b24;
+    font-size: 1.5rem;
+    line-height: 1.22;
+}
+
+.rally-status p:last-child {
+    color: #566072;
+    font-size: 0.96rem;
+    line-height: 1.55;
+    max-width: 980px;
+}
+
+.rally-charts {
+    display: grid;
+    grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
+    gap: 18px;
+}
+
+.chart-card {
+    background: #fff;
+    border: 1px solid #dde3ed;
+    border-radius: 8px;
+    box-shadow: 0 12px 34px rgba(30, 46, 80, 0.08);
+    min-height: 432px;
+    padding: 18px;
+}
+
+.chart-card-header {
+    display: flex;
+    align-items: start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 12px;
+}
+
+.chart-card-header h4 {
+    color: #181c25;
+    font-size: 1rem;
+    line-height: 1.25;
+    margin-bottom: 4px;
+}
+
+.chart-card-header p {
+    color: #697386;
+    font-size: 0.82rem;
+    line-height: 1.35;
+}
+
+.chart-stat {
+    flex: 0 0 auto;
+    border: 1px solid #d6deea;
+    border-radius: 999px;
+    color: #404a5f;
+    font-size: 0.78rem;
+    font-weight: 700;
+    line-height: 1;
+    padding: 8px 10px;
+    white-space: nowrap;
+}
+
+.chart-host {
+    height: 358px;
+    position: relative;
+}
+
+.chart-svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+    overflow: visible;
+}
+
+.chart-axis text,
+.chart-tick-label,
+.chart-axis-label {
+    fill: #677085;
+    font-size: 12px;
+}
+
+.chart-axis path,
+.chart-axis line,
+.chart-grid line {
+    stroke: #d8dee9;
+}
+
+.chart-grid line {
+    stroke-dasharray: 2 4;
+}
+
+.scatter-point {
+    cursor: pointer;
+    transition: opacity 0.38s ease, fill 0.38s ease, stroke 0.38s ease;
+}
+
+.scatter-label {
+    fill: #2d3545;
+    font-size: 11px;
+    font-weight: 700;
+    paint-order: stroke;
+    stroke: #fff;
+    stroke-width: 4px;
+    stroke-linejoin: round;
+    transition: opacity 0.3s ease;
+}
+
+.histogram-bar {
+    transition: width 0.42s ease, fill 0.42s ease, opacity 0.42s ease;
+}
+
+.histogram-value {
+    fill: #293241;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.histogram-label {
+    fill: #3e4758;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.era-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 14px;
+    margin-top: 8px;
+}
+
+.era-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: #596275;
+    font-size: 0.76rem;
+    font-weight: 700;
+}
+
+.era-legend-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 999px;
+}
+
+.chart-loading,
+.chart-error {
+    display: grid;
+    place-items: center;
+    min-height: 280px;
+    color: #596275;
+    font-size: 0.95rem;
+    text-align: center;
+}
+
+.chart-error {
+    color: #9d2b2b;
+}
+
+.chart-tooltip {
+    position: absolute;
+    z-index: 30;
+    max-width: 240px;
+    border-radius: 8px;
+    background: rgba(20, 24, 32, 0.92);
+    color: #fff;
+    font-size: 0.78rem;
+    line-height: 1.45;
+    opacity: 0;
+    padding: 9px 11px;
+    pointer-events: none;
+    transform: translate(-50%, -110%);
+    transition: opacity 0.16s ease;
+}
+
+.chart-tooltip strong {
+    display: block;
+    font-size: 0.84rem;
+    margin-bottom: 2px;
+}
+
+@media (max-width: 1180px) {
+    .scrolly-rally {
+        grid-template-columns: 1fr;
+    }
+
+    .rally-story {
+        gap: 24px;
+        order: 2;
+        padding: 18px 0 0;
+    }
+
+    .rally-step {
+        min-height: auto;
+    }
+
+    .rally-visual-sticky {
+        min-height: auto;
+        order: 1;
+        position: relative;
+        top: auto;
+    }
+}
+
+@media (max-width: 860px) {
+    .playstyle-container {
+        padding: 42px 16px 74px;
+    }
+
+    .section-title h2 {
+        font-size: 2.35rem;
+    }
+
+    .playstyle-intro {
+        text-align: left;
+    }
+
+    .rally-charts {
+        grid-template-columns: 1fr;
+    }
+
+    .chart-card {
+        min-height: 380px;
+        padding: 14px;
+    }
+
+    .chart-host {
+        height: 310px;
+    }
+
+    .chart-card-header {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .chart-stat {
+        align-self: flex-start;
     }
 }
