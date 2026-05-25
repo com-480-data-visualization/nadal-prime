@@ -77,6 +77,15 @@ const SERVICE_ZONES = [
 const SERVICE_IN_KEYS = ["ad_wide", "ad_middle", "ad_t", "deuce_t", "deuce_middle", "deuce_wide"];
 const SERVICE_OUT_KEYS = ["err_net", "err_wide", "err_deep", "err_wide_deep"];
 
+const FINISH_TYPES = [
+    { key: "ace", label: "Aces", color: "#1f78b4" },
+    { key: "winners_fh", label: "Forehand winners", color: "#e25555" },
+    { key: "winners_bh", label: "Backhand winners", color: "#7c5ce0" },
+    { key: "net_winner", label: "Net winners", color: "#00a878" },
+    { key: "passed_at_net", label: "Passing winners", color: "#f59f00" },
+    { key: "unforced", label: "Opponent unforced errors", color: "#6f7d95" }
+];
+
 const FEATURE_META = {
     rally: {
         id: "rally",
@@ -87,6 +96,7 @@ const FEATURE_META = {
         scatterSubtitle: "Missing ATP points use rank-derived estimates.",
         scatterXAxisLabel: "Volley shot percentage",
         scatterMetricLabel: "Volley shots",
+        scatterValueSuffix: "%",
         detailTitle: "Shot Type Percentage",
         detailSubtitle: "Aggregated rally shot distribution",
         detailType: "histogram"
@@ -100,9 +110,24 @@ const FEATURE_META = {
         scatterSubtitle: "X-axis is service points won in three shots or fewer divided by total service points.",
         scatterXAxisLabel: "Service points won in <=3 shots",
         scatterMetricLabel: "Serve points won in <=3 shots",
-        detailTitle: "Serve Direction and Error Heat Map",
-        detailSubtitle: "Share of charted serve locations and service errors by court zone",
+        scatterValueSuffix: "%",
+        detailTitle: "Service Heat Map",
+        detailSubtitle: "",
         detailType: "court"
+    },
+    finishes: {
+        id: "finishes",
+        selectorLabel: "Finishes",
+        statusKicker: "Finishes feature family",
+        allTitle: "Point-ending profiles across all eras",
+        scatterTitle: "Mean Winners per Match vs ATP Points",
+        scatterSubtitle: "X-axis is each player-era profile's average winners per charted match.",
+        scatterXAxisLabel: "Mean winners per match",
+        scatterMetricLabel: "Mean winners per match",
+        scatterValueSuffix: "",
+        detailTitle: "How Players Win Points",
+        detailSubtitle: "Share of charted point-ending routes",
+        detailType: "pie"
     }
 };
 
@@ -112,6 +137,14 @@ const SERVICE_ERA_SUMMARIES = {
     transition: "Bigger serves and stronger first balls start to pair with baseline patterns, so quick service points become part of a broader attacking package.",
     big3: "The elite profile is not only about raw serving: top players combine quick holds with enough rally depth to survive when the serve comes back.",
     modern: "Modern servers hunt early control aggressively, using pace, direction, and the plus-one shot to shorten service games."
+};
+
+const FINISH_ERA_SUMMARIES = {
+    open: "The available point-ending data emphasizes a sport where cleaner winners and opponent mistakes both matter, with finishing patterns still tied to forward-court pressure.",
+    graphite: "More racket power expands the winner profile, while errors remain a major part of how points end under faster exchanges.",
+    transition: "Baseline aggression makes forehand and backhand winners more visible as players learn to finish without always moving forward.",
+    big3: "Elite finishers combine winners with patience: forcing one more ball and collecting opponent errors becomes part of dominance.",
+    modern: "Modern profiles show point endings built from first-strike shots, aggressive groundstrokes, and the pressure to draw errors quickly."
 };
 
 // Era data: ATP points are indicative for the historical framing mini-charts.
@@ -333,15 +366,18 @@ async function initializeRallyStory() {
     detailHost.innerHTML = '<div class="chart-loading">Loading feature distribution...</div>';
 
     try {
-        const [shotsRows, serviceRows, atpRows] = await Promise.all([
+        const [shotsRows, serviceRows, overviewRows, netRows, atpRows] = await Promise.all([
             fetchCsv("datasets/clean_datasets/shots_stats.csv"),
             fetchCsv("datasets/clean_datasets/service_stats.csv"),
+            fetchCsv("datasets/clean_datasets/overview_stats.csv"),
+            fetchCsv("datasets/clean_datasets/netpoints_stats.csv"),
             fetchCsv("datasets/clean_datasets/all_atp_matches.csv")
         ]);
         const strengthByPlayerEra = buildPlayerStrengthLookup(atpRows);
         const features = {
             rally: prepareRallyData(shotsRows, strengthByPlayerEra),
-            service: prepareServiceData(serviceRows, strengthByPlayerEra)
+            service: prepareServiceData(serviceRows, strengthByPlayerEra),
+            finishes: prepareFinishesData(overviewRows, serviceRows, netRows, strengthByPlayerEra)
         };
         const state = {
             activeEra: "all",
@@ -588,6 +624,128 @@ function prepareServiceData(serviceRows, strengthByPlayerEra) {
     };
 }
 
+function prepareFinishesData(overviewRows, serviceRows, netRows, strengthByPlayerEra) {
+    const profileMap = new Map();
+    const overviewByMatch = new Map();
+
+    overviewRows.forEach((row) => {
+        const year = parseYear(row.match_id);
+        const era = getEraForYear(year);
+        const player = (row.player || "").trim();
+
+        if (!era || !player) {
+            return;
+        }
+
+        const matchRows = overviewByMatch.get(row.match_id) || [];
+        matchRows.push({ ...row, era, player, normalizedPlayer: normalizeName(player) });
+        overviewByMatch.set(row.match_id, matchRows);
+    });
+
+    overviewByMatch.forEach((matchRows) => {
+        matchRows.forEach((row) => {
+            const profile = getOrCreateFinishProfile(profileMap, row.era, row.player);
+            const opponentUnforced = matchRows
+                .filter((opponent) => opponent.normalizedPlayer !== row.normalizedPlayer)
+                .reduce((sum, opponent) => sum + toNumber(opponent.unforced), 0);
+
+            profile.matches.add(row.match_id);
+            profile.winnerMatches.add(row.match_id);
+            profile.winners += toNumber(row.winners);
+            profile.finishes.winners_fh += toNumber(row.winners_fh);
+            profile.finishes.winners_bh += toNumber(row.winners_bh);
+            profile.finishes.unforced += opponentUnforced;
+        });
+    });
+
+    serviceRows.forEach((row) => {
+        const year = parseYear(row.match_id);
+        const era = getEraForYear(year);
+        const player = (row.player || "").trim();
+
+        if (!era || !player) {
+            return;
+        }
+
+        const profile = getOrCreateFinishProfile(profileMap, era, player);
+        profile.matches.add(row.match_id);
+        profile.finishes.ace += toNumber(row.aces);
+    });
+
+    netRows.forEach((row) => {
+        const year = parseYear(row.match_id);
+        const era = getEraForYear(year);
+        const player = (row.player || "").trim();
+
+        if (!era || !player) {
+            return;
+        }
+
+        const profile = getOrCreateFinishProfile(profileMap, era, player);
+        profile.matches.add(row.match_id);
+        profile.finishes.net_winner += toNumber(row.net_winner);
+        profile.finishes.passed_at_net += toNumber(row.passed_at_net);
+    });
+
+    const profiles = Array.from(profileMap.values()).map((profile) => {
+        const strength = strengthByPlayerEra.get(profile.key);
+        const pointsFromRanking = strength?.points || 0;
+        const rankEstimate = strength?.bestRank ? rankToPointEstimate(strength.bestRank) : null;
+        const atpPoints = pointsFromRanking > 0 ? pointsFromRanking : rankEstimate;
+        const winnerMatchCount = profile.winnerMatches.size;
+        const finishTotal = FINISH_TYPES.reduce((sum, type) => sum + profile.finishes[type.key], 0);
+        const meanWinnersPerMatch = winnerMatchCount
+            ? profile.winners / winnerMatchCount
+            : finishTotal / Math.max(1, profile.matches.size);
+
+        return {
+            ...profile,
+            era: ERA_BY_ID[profile.eraId],
+            matches: profile.matches.size,
+            winnerMatchCount,
+            finishTotal,
+            meanWinnersPerMatch,
+            xValue: meanWinnersPerMatch,
+            xValueLabel: FEATURE_META.finishes.scatterMetricLabel,
+            atpPoints,
+            pointsEstimated: pointsFromRanking <= 0 && Number.isFinite(rankEstimate),
+            bestRank: strength?.bestRank || null
+        };
+    }).filter((profile) => profile.finishTotal > 0 && profile.matches > 0);
+
+    const scatterData = profiles.filter((profile) => Number.isFinite(profile.atpPoints) && profile.atpPoints > 0);
+    const distributions = buildFinishDistributions(profiles);
+    const summaries = buildFinishSummaries(profiles);
+
+    return {
+        ...FEATURE_META.finishes,
+        profiles,
+        scatterData,
+        distributions,
+        summaries
+    };
+}
+
+function getOrCreateFinishProfile(profileMap, era, player) {
+    const normalizedPlayer = normalizeName(player);
+    const key = `${era.id}|${normalizedPlayer}`;
+
+    if (!profileMap.has(key)) {
+        profileMap.set(key, {
+            key,
+            eraId: era.id,
+            player,
+            normalizedPlayer,
+            winners: 0,
+            finishes: createFinishCountBucket(),
+            matches: new Set(),
+            winnerMatches: new Set()
+        });
+    }
+
+    return profileMap.get(key);
+}
+
 function buildPlayerStrengthLookup(rows) {
     const lookup = new Map();
 
@@ -710,6 +868,57 @@ function buildServiceSummaries(profiles) {
     return summaries;
 }
 
+function buildFinishDistributions(profiles) {
+    const buckets = new Map();
+    buckets.set("all", createFinishCountBucket());
+    ERAS.forEach((era) => buckets.set(era.id, createFinishCountBucket()));
+
+    profiles.forEach((profile) => {
+        addFinishCounts(buckets.get("all"), profile.finishes);
+        addFinishCounts(buckets.get(profile.eraId), profile.finishes);
+    });
+
+    const distributions = new Map();
+    buckets.forEach((counts, key) => {
+        const total = FINISH_TYPES.reduce((sum, type) => sum + counts[type.key], 0);
+        distributions.set(key, {
+            counts,
+            total,
+            values: FINISH_TYPES.map((type) => ({
+                ...type,
+                count: counts[type.key],
+                value: total ? (counts[type.key] / total) * 100 : 0
+            }))
+        });
+    });
+
+    return distributions;
+}
+
+function buildFinishSummaries(profiles) {
+    const buckets = new Map();
+    buckets.set("all", { winners: 0, winnerMatches: 0 });
+    ERAS.forEach((era) => buckets.set(era.id, { winners: 0, winnerMatches: 0 }));
+
+    profiles.forEach((profile) => {
+        ["all", profile.eraId].forEach((key) => {
+            const bucket = buckets.get(key);
+            bucket.winners += profile.winners;
+            bucket.winnerMatches += profile.winnerMatchCount;
+        });
+    });
+
+    const summaries = new Map();
+    buckets.forEach((bucket, key) => {
+        summaries.set(key, {
+            ...bucket,
+            meanWinnersPerMatch: bucket.winnerMatches ? bucket.winners / bucket.winnerMatches : 0
+        });
+    });
+
+    return summaries;
+}
+
 function createShotCountBucket() {
     return SHOT_TYPES.reduce((bucket, type) => {
         bucket[type.key] = 0;
@@ -724,6 +933,13 @@ function createServiceZoneBucket() {
     }, {});
 }
 
+function createFinishCountBucket() {
+    return FINISH_TYPES.reduce((bucket, type) => {
+        bucket[type.key] = 0;
+        return bucket;
+    }, {});
+}
+
 function addShotCounts(target, source) {
     SHOT_TYPES.forEach((type) => {
         target[type.key] += source[type.key] || 0;
@@ -733,6 +949,12 @@ function addShotCounts(target, source) {
 function addServiceZoneCounts(target, source) {
     SERVICE_ZONES.forEach((zone) => {
         target[zone.key] += source[zone.key] || 0;
+    });
+}
+
+function addFinishCounts(target, source) {
+    FINISH_TYPES.forEach((type) => {
+        target[type.key] += source[type.key] || 0;
     });
 }
 
@@ -772,7 +994,7 @@ function createScatterChart(host, rallyData) {
             x,
             y: height - 30,
             "text-anchor": "middle"
-        }, `${roundValue(tick)}%`));
+        }, formatScatterXValue(tick, rallyData)));
     });
 
     getTicks(yMax, 5).forEach((tick) => {
@@ -938,6 +1160,14 @@ function updateScatterChart(chart, selectedEra) {
             opacity: isGlobal ? "0.72" : "0.92"
         }, profile.player));
     });
+}
+
+function formatScatterXValue(value, featureData) {
+    if (featureData.scatterValueSuffix === "%") {
+        return formatPercent(value);
+    }
+
+    return String(roundValue(value));
 }
 
 function placeScatterLabel(profile, labels, chart) {
@@ -1111,9 +1341,110 @@ function updateHistogramChart(chart, selectedEra) {
     });
 }
 
+function createPieChart(host, featureData) {
+    host.innerHTML = "";
+
+    const width = 560;
+    const height = 430;
+    const centerX = 190;
+    const centerY = 204;
+    const radius = 158;
+    const svg = createSvg("svg", {
+        class: "chart-svg",
+        viewBox: `0 0 ${width} ${height}`
+    });
+    const slices = new Map();
+    const sliceLabels = new Map();
+
+    FINISH_TYPES.forEach((type, index) => {
+        const slice = createSvg("path", {
+            class: "pie-slice",
+            fill: type.color,
+            d: describePieSlice(centerX, centerY, radius, -Math.PI / 2, -Math.PI / 2)
+        });
+
+        slice.addEventListener("mousemove", (event) => {
+            showTooltip(event, `<strong>${type.label}</strong>${formatPercent(Number(slice.dataset.value || 0))} of point endings`);
+        });
+        slice.addEventListener("mouseleave", hideTooltip);
+
+        svg.appendChild(slice);
+        slices.set(type.key, slice);
+
+        const sliceLabel = createSvg("text", {
+            class: "pie-slice-label",
+            x: centerX,
+            y: centerY,
+            "text-anchor": "middle",
+            opacity: "0"
+        }, "0%");
+        svg.appendChild(sliceLabel);
+        sliceLabels.set(type.key, sliceLabel);
+
+        const legendY = 104 + index * 40;
+        svg.appendChild(createSvg("rect", {
+            x: 390,
+            y: legendY - 11,
+            width: 12,
+            height: 12,
+            fill: type.color,
+            rx: 2
+        }));
+        svg.appendChild(createSvg("text", {
+            class: "pie-legend-label",
+            x: 410,
+            y: legendY
+        }, type.label));
+
+    });
+
+    host.appendChild(svg);
+
+    return {
+        type: "pie",
+        slices,
+        sliceLabels,
+        centerX,
+        centerY,
+        radius,
+        data: featureData
+    };
+}
+
+function updatePieChart(chart, selectedEra) {
+    const distribution = chart.data.distributions.get(selectedEra) || chart.data.distributions.get("all");
+    let currentAngle = -Math.PI / 2;
+    const total = Math.max(distribution.total, 1);
+
+    distribution.values.forEach((item) => {
+        const slice = chart.slices.get(item.key);
+        const sliceLabel = chart.sliceLabels.get(item.key);
+        const angle = (item.count / total) * Math.PI * 2;
+        const nextAngle = currentAngle + angle;
+        const labelAngle = currentAngle + angle / 2;
+        const labelRadius = chart.radius * 0.64;
+        const labelPoint = polarToCartesian(chart.centerX, chart.centerY, labelRadius, labelAngle);
+
+        slice.setAttribute("d", describePieSlice(chart.centerX, chart.centerY, chart.radius, currentAngle, nextAngle));
+        slice.setAttribute("fill", item.color);
+        slice.dataset.value = item.value;
+
+        sliceLabel.setAttribute("x", labelPoint.x);
+        sliceLabel.setAttribute("y", labelPoint.y + 4);
+        sliceLabel.setAttribute("opacity", item.value >= 3 ? "1" : "0");
+        sliceLabel.textContent = formatPercent(item.value);
+
+        currentAngle = nextAngle;
+    });
+}
+
 function createDetailChart(host, featureData) {
     if (featureData.detailType === "court") {
         return createCourtHeatmapChart(host, featureData);
+    }
+
+    if (featureData.detailType === "pie") {
+        return createPieChart(host, featureData);
     }
 
     return createHistogramChart(host, featureData);
@@ -1125,14 +1456,19 @@ function updateDetailChart(chart, selectedEra) {
         return;
     }
 
+    if (chart.type === "pie") {
+        updatePieChart(chart, selectedEra);
+        return;
+    }
+
     updateHistogramChart(chart, selectedEra);
 }
 
 function createCourtHeatmapChart(host, serviceData) {
     host.innerHTML = "";
 
-    const width = 860;
-    const height = 430;
+    const width = 540;
+    const height = 560;
     const court = getCourtGeometry(width, height);
     const zoneShapes = buildServiceCourtZones(court);
     const svg = createSvg("svg", {
@@ -1142,6 +1478,8 @@ function createCourtHeatmapChart(host, serviceData) {
     const zones = new Map();
     const labels = new Map();
     const values = new Map();
+    const groupLabels = new Map();
+    const groupValues = new Map();
     const labelElements = [];
 
     svg.appendChild(createSvg("rect", {
@@ -1170,9 +1508,12 @@ function createCourtHeatmapChart(host, serviceData) {
                 const mode = rect.dataset.mode;
                 const kind = rect.dataset.kind;
                 const suffix = mode === "inout"
-                    ? `of all ${kind === "in" ? "in serves" : "serve errors"}`
+                    ? "of all mapped serves"
                     : `of ${kind === "in" ? "in serves" : "serve errors"}`;
-                showTooltip(event, `<strong>${shape.label}</strong>${formatPercent(Number(rect.dataset.value || 0))} ${suffix}`);
+                const tooltipLabel = mode === "inout"
+                    ? (kind === "in" ? "In serves" : "Serve errors")
+                    : shape.label;
+                showTooltip(event, `<strong>${tooltipLabel}</strong>${formatPercent(Number(rect.dataset.value || 0))} ${suffix}`);
             });
             rect.addEventListener("mouseleave", hideTooltip);
 
@@ -1180,21 +1521,66 @@ function createCourtHeatmapChart(host, serviceData) {
             return rect;
         });
 
+        const labelPoints = shape.labelPoints || [{
+            x: shape.labelX,
+            y: shape.labelY,
+            label: shape.shortLabel || shape.label
+        }];
+        const zoneLabels = [];
+        const zoneValues = [];
+
+        labelPoints.forEach((point) => {
+            const label = createSvg("text", {
+                class: "court-zone-label",
+                x: point.x,
+                y: point.y - 4
+            }, point.label || shape.shortLabel || shape.label);
+            const value = createSvg("text", {
+                class: "court-zone-value",
+                x: point.x,
+                y: point.y + 13
+            }, "0%");
+
+            labelElements.push(label, value);
+            zoneLabels.push(label);
+            zoneValues.push(value);
+        });
+
+        zones.set(shape.key, rects);
+        labels.set(shape.key, zoneLabels);
+        values.set(shape.key, zoneValues);
+    });
+
+    [
+        {
+            key: "in",
+            label: "IN",
+            x: court.centerX,
+            y: (court.topServiceLine + court.netY) / 2
+        },
+        {
+            key: "out",
+            label: "OUT",
+            x: court.centerX,
+            y: (court.baselineTop + court.topServiceLine) / 2
+        }
+    ].forEach((group) => {
         const label = createSvg("text", {
-            class: "court-zone-label",
-            x: shape.labelX,
-            y: shape.labelY - 4
-        }, shape.shortLabel || shape.label);
+            class: "court-group-label",
+            x: group.x,
+            y: group.y - 6,
+            opacity: "0"
+        }, group.label);
         const value = createSvg("text", {
-            class: "court-zone-value",
-            x: shape.labelX,
-            y: shape.labelY + 13
+            class: "court-group-value",
+            x: group.x,
+            y: group.y + 17,
+            opacity: "0"
         }, "0%");
 
         labelElements.push(label, value);
-        zones.set(shape.key, rects);
-        labels.set(shape.key, label);
-        values.set(shape.key, value);
+        groupLabels.set(group.key, label);
+        groupValues.set(group.key, value);
     });
 
     drawCourtLines(svg, court);
@@ -1204,7 +1590,7 @@ function createCourtHeatmapChart(host, serviceData) {
 
     svg.appendChild(createSvg("text", {
         x: width / 2,
-        y: 414,
+        y: height - 18,
         fill: "#68645d",
         "font-size": "12",
         "font-weight": "700",
@@ -1220,6 +1606,8 @@ function createCourtHeatmapChart(host, serviceData) {
         zones,
         labels,
         values,
+        groupLabels,
+        groupValues,
         zoneShapes,
         data: serviceData
     };
@@ -1234,19 +1622,21 @@ function updateCourtHeatmapChart(chart, selectedEra) {
     const modeValues = getServiceHeatmapValues(distribution, chart.mode);
     const visibleValues = Array.from(modeValues.values()).filter((item) => item.visible).map((item) => item.value);
     const maxValue = Math.max(...visibleValues, 1);
+    const showAggregate = chart.mode === "inout";
 
     distribution.values.forEach((zone) => {
         const rects = chart.zones.get(zone.key) || [];
-        const value = chart.values.get(zone.key);
-        const label = chart.labels.get(zone.key);
+        const valueTexts = chart.values.get(zone.key) || [];
+        const labelTexts = chart.labels.get(zone.key) || [];
         const modeValue = modeValues.get(zone.key) || { value: 0, visible: false, kind: SERVICE_IN_KEYS.includes(zone.key) ? "in" : "out" };
         const intensity = modeValue.visible
-            ? (chart.mode === "inout" ? modeValue.value / 100 : modeValue.value / maxValue)
+            ? (showAggregate ? modeValue.value / 100 : modeValue.value / maxValue)
             : 0;
         const color = modeValue.kind === "out"
-            ? interpolateColor("#f7d8d2", "#c7372f", intensity)
-            : interpolateColor("#d7e9fb", "#1f70bf", intensity);
-        const opacity = modeValue.visible ? 0.12 + (modeValue.value / 100) * 0.76 : 0.04;
+            ? interpolateColor("#ffc0b5", "#d71920", intensity)
+            : interpolateColor("#b9dcff", "#006fdf", intensity);
+        const opacity = modeValue.visible ? 0.22 + (modeValue.value / 100) * 0.76 : 0.04;
+        const showZoneText = modeValue.visible && !showAggregate;
 
         rects.forEach((rect) => {
             rect.setAttribute("fill", color);
@@ -1255,10 +1645,32 @@ function updateCourtHeatmapChart(chart, selectedEra) {
             rect.dataset.mode = chart.mode;
             rect.dataset.kind = modeValue.kind;
         });
-        value.textContent = modeValue.visible ? formatPercent(modeValue.value) : "";
-        value.setAttribute("opacity", modeValue.visible ? "1" : "0");
-        label.setAttribute("opacity", modeValue.visible ? "1" : "0");
+
+        valueTexts.forEach((valueText) => {
+            valueText.textContent = showZoneText ? formatPercent(modeValue.value) : "";
+            valueText.setAttribute("opacity", showZoneText ? "1" : "0");
+        });
+        labelTexts.forEach((labelText) => {
+            labelText.setAttribute("opacity", showZoneText ? "1" : "0");
+        });
     });
+
+    updateCourtGroupLabel(chart, "in", modeValues.get(SERVICE_IN_KEYS[0])?.value || 0, showAggregate);
+    updateCourtGroupLabel(chart, "out", modeValues.get(SERVICE_OUT_KEYS[0])?.value || 0, showAggregate);
+}
+
+function updateCourtGroupLabel(chart, key, value, visible) {
+    const label = chart.groupLabels.get(key);
+    const valueText = chart.groupValues.get(key);
+
+    if (label) {
+        label.setAttribute("opacity", visible ? "1" : "0");
+    }
+
+    if (valueText) {
+        valueText.textContent = visible ? formatPercent(value) : "";
+        valueText.setAttribute("opacity", visible ? "1" : "0");
+    }
 }
 
 function initializeCourtModeControls(chart) {
@@ -1317,17 +1729,23 @@ function percentageOf(value, total) {
 }
 
 function getCourtGeometry(width, height) {
-    const courtLengthFt = 78;
     const courtWidthFt = 36;
-    const outerLeft = 32;
-    const outerRight = width - 32;
-    const outerWidth = outerRight - outerLeft;
-    const courtHeight = Math.min(height - 112, outerWidth * 0.43);
-    const top = 58;
-    const scaleX = outerWidth / courtLengthFt;
-    const scaleY = courtHeight / courtWidthFt;
-    const x = (feetFromLeftBaseline) => outerLeft + feetFromLeftBaseline * scaleX;
-    const y = (feetFromTopDoubles) => top + feetFromTopDoubles * scaleY;
+    const visualBackcourtFt = 11;
+    const visualServiceBoxFt = 21;
+    const visualCourtLengthFt = visualBackcourtFt * 2 + visualServiceBoxFt * 2;
+    const verticalPadding = 18;
+    const captionSpace = 30;
+    const availableHeight = height - verticalPadding * 2 - captionSpace;
+    const availableWidth = width - 84;
+    const courtHeight = availableHeight;
+    const outerWidth = Math.min(availableWidth, courtHeight * 0.64);
+    const outerLeft = (width - outerWidth) / 2;
+    const outerRight = outerLeft + outerWidth;
+    const top = verticalPadding;
+    const scaleX = outerWidth / courtWidthFt;
+    const scaleY = courtHeight / visualCourtLengthFt;
+    const x = (feetFromLeftDoublesSideline) => outerLeft + feetFromLeftDoublesSideline * scaleX;
+    const y = (visualFeetFromTopBaseline) => top + visualFeetFromTopBaseline * scaleY;
 
     return {
         scaleX,
@@ -1338,14 +1756,14 @@ function getCourtGeometry(width, height) {
         outerRight,
         outerWidth,
         courtHeight,
-        singlesTop: y(4.5),
-        singlesBottom: y(31.5),
-        centerY: y(18),
-        baselineLeft: x(0),
-        leftServiceLine: x(18),
-        netX: x(39),
-        rightServiceLine: x(60),
-        baselineRight: x(78),
+        singlesLeft: x(4.5),
+        singlesRight: x(31.5),
+        centerX: x(18),
+        baselineTop: y(0),
+        topServiceLine: y(visualBackcourtFt),
+        netY: y(visualBackcourtFt + visualServiceBoxFt),
+        bottomServiceLine: y(visualBackcourtFt + visualServiceBoxFt * 2),
+        baselineBottom: y(visualCourtLengthFt),
         x,
         y
     };
@@ -1354,13 +1772,13 @@ function getCourtGeometry(width, height) {
 function drawCourtLines(svg, court) {
     const lines = [
         ["rect", { class: "court-line court-line-outer", x: court.outerLeft, y: court.top, width: court.outerWidth, height: court.courtHeight }],
-        ["line", { class: "court-line", x1: court.outerLeft, x2: court.outerRight, y1: court.singlesTop, y2: court.singlesTop }],
-        ["line", { class: "court-line", x1: court.outerLeft, x2: court.outerRight, y1: court.singlesBottom, y2: court.singlesBottom }],
-        ["line", { class: "court-line", x1: court.leftServiceLine, x2: court.leftServiceLine, y1: court.singlesTop, y2: court.singlesBottom }],
-        ["line", { class: "court-line", x1: court.rightServiceLine, x2: court.rightServiceLine, y1: court.singlesTop, y2: court.singlesBottom }],
-        ["line", { class: "court-line", x1: court.leftServiceLine, x2: court.rightServiceLine, y1: court.centerY, y2: court.centerY }],
-        ["line", { class: "court-line court-center-mark", x1: court.outerLeft, x2: court.outerLeft + 10, y1: court.centerY, y2: court.centerY }],
-        ["line", { class: "court-line court-center-mark", x1: court.outerRight - 10, x2: court.outerRight, y1: court.centerY, y2: court.centerY }]
+        ["line", { class: "court-line", x1: court.singlesLeft, x2: court.singlesLeft, y1: court.top, y2: court.bottom }],
+        ["line", { class: "court-line", x1: court.singlesRight, x2: court.singlesRight, y1: court.top, y2: court.bottom }],
+        ["line", { class: "court-line", x1: court.singlesLeft, x2: court.singlesRight, y1: court.topServiceLine, y2: court.topServiceLine }],
+        ["line", { class: "court-line", x1: court.singlesLeft, x2: court.singlesRight, y1: court.bottomServiceLine, y2: court.bottomServiceLine }],
+        ["line", { class: "court-line", x1: court.centerX, x2: court.centerX, y1: court.topServiceLine, y2: court.bottomServiceLine }],
+        ["line", { class: "court-line court-center-mark", x1: court.centerX, x2: court.centerX, y1: court.top, y2: court.top + 12 }],
+        ["line", { class: "court-line court-center-mark", x1: court.centerX, x2: court.centerX, y1: court.bottom - 12, y2: court.bottom }]
     ];
 
     lines.forEach(([tag, attrs]) => {
@@ -1369,32 +1787,32 @@ function drawCourtLines(svg, court) {
 
     svg.appendChild(createSvg("line", {
         class: "court-net",
-        x1: court.netX,
-        x2: court.netX,
-        y1: court.top - 18,
-        y2: court.bottom + 18
+        x1: court.outerLeft - 18,
+        x2: court.outerRight + 18,
+        y1: court.netY,
+        y2: court.netY
     }));
 }
 
 function buildServiceCourtZones(court) {
-    const serviceLeft = court.netX;
-    const serviceRight = court.rightServiceLine;
-    const serviceWidth = serviceRight - serviceLeft;
-    const topSingles = court.singlesTop;
-    const bottomSingles = court.singlesBottom;
-    const mid = court.centerY;
-    const halfHeight = (bottomSingles - topSingles) / 2;
-    const third = halfHeight / 3;
-    const alleyHeight = court.singlesTop - court.top;
-    const deepLeft = court.rightServiceLine;
-    const deepWidth = court.baselineRight - court.rightServiceLine;
-    const netBandWidth = Math.max(22, court.scaleX * 4);
-    const labelX = serviceLeft + serviceWidth / 2;
+    const serviceTop = court.topServiceLine;
+    const serviceBottom = court.netY;
+    const serviceHeight = serviceBottom - serviceTop;
+    const adLeft = court.singlesLeft;
+    const adRight = court.centerX;
+    const deuceLeft = court.centerX;
+    const deuceRight = court.singlesRight;
+    const adThird = (adRight - adLeft) / 3;
+    const deuceThird = (deuceRight - deuceLeft) / 3;
+    const alleyWidth = court.singlesLeft - court.outerLeft;
+    const deepTop = court.baselineTop;
+    const deepHeight = court.topServiceLine - court.baselineTop;
+    const netBandHeight = Math.max(26, court.scaleY * 4);
 
     const makeRect = (x, y, width, height) => ({ x, y, width, height });
-    const corridorRects = (x, width) => [
-        makeRect(x, court.top, width, alleyHeight),
-        makeRect(x, court.singlesBottom, width, alleyHeight)
+    const corridorRects = (y, height) => [
+        makeRect(court.outerLeft, y, alleyWidth, height),
+        makeRect(court.singlesRight, y, alleyWidth, height)
     ];
 
     return [
@@ -1402,85 +1820,109 @@ function buildServiceCourtZones(court) {
             key: "ad_wide",
             label: "Ad wide",
             shortLabel: "Wide",
-            rects: [makeRect(serviceLeft, topSingles, serviceWidth, third)],
-            labelX,
-            labelY: topSingles + third / 2
+            rects: [makeRect(adLeft, serviceTop, adThird, serviceHeight)],
+            labelX: adLeft + adThird / 2,
+            labelY: serviceTop + serviceHeight / 2
         },
         {
             key: "ad_middle",
             label: "Ad body",
             shortLabel: "Body",
-            rects: [makeRect(serviceLeft, topSingles + third, serviceWidth, third)],
-            labelX,
-            labelY: topSingles + third * 1.5
+            rects: [makeRect(adLeft + adThird, serviceTop, adThird, serviceHeight)],
+            labelX: adLeft + adThird * 1.5,
+            labelY: serviceTop + serviceHeight / 2
         },
         {
             key: "ad_t",
             label: "Ad T",
             shortLabel: "T",
-            rects: [makeRect(serviceLeft, topSingles + third * 2, serviceWidth, third)],
-            labelX,
-            labelY: topSingles + third * 2.5
+            rects: [makeRect(adLeft + adThird * 2, serviceTop, adThird, serviceHeight)],
+            labelX: adLeft + adThird * 2.5,
+            labelY: serviceTop + serviceHeight / 2
         },
         {
             key: "deuce_t",
             label: "Deuce T",
             shortLabel: "T",
-            rects: [makeRect(serviceLeft, mid, serviceWidth, third)],
-            labelX,
-            labelY: mid + third / 2
+            rects: [makeRect(deuceLeft, serviceTop, deuceThird, serviceHeight)],
+            labelX: deuceLeft + deuceThird / 2,
+            labelY: serviceTop + serviceHeight / 2
         },
         {
             key: "deuce_middle",
             label: "Deuce body",
             shortLabel: "Body",
-            rects: [makeRect(serviceLeft, mid + third, serviceWidth, third)],
-            labelX,
-            labelY: mid + third * 1.5
+            rects: [makeRect(deuceLeft + deuceThird, serviceTop, deuceThird, serviceHeight)],
+            labelX: deuceLeft + deuceThird * 1.5,
+            labelY: serviceTop + serviceHeight / 2
         },
         {
             key: "deuce_wide",
             label: "Deuce wide",
             shortLabel: "Wide",
-            rects: [makeRect(serviceLeft, mid + third * 2, serviceWidth, third)],
-            labelX,
-            labelY: mid + third * 2.5
+            rects: [makeRect(deuceLeft + deuceThird * 2, serviceTop, deuceThird, serviceHeight)],
+            labelX: deuceLeft + deuceThird * 2.5,
+            labelY: serviceTop + serviceHeight / 2
         },
         {
             key: "err_net",
             label: "Net errors",
-            shortLabel: "Net",
+            shortLabel: "Net error",
             isError: true,
-            rects: [makeRect(court.netX, topSingles, netBandWidth, bottomSingles - topSingles)],
-            labelX: court.netX + netBandWidth / 2,
-            labelY: mid
+            rects: [makeRect(court.singlesLeft, court.netY, court.singlesRight - court.singlesLeft, netBandHeight)],
+            labelX: court.centerX,
+            labelY: court.netY + netBandHeight / 2
         },
         {
             key: "err_wide",
             label: "Wide errors",
-            shortLabel: "Wide",
+            shortLabel: "Wide error",
             isError: true,
-            rects: corridorRects(serviceLeft, serviceRight - serviceLeft),
-            labelX: serviceLeft + serviceWidth / 2,
-            labelY: court.top + alleyHeight / 2
+            rects: corridorRects(serviceTop, serviceHeight),
+            labelX: court.outerLeft + alleyWidth / 2,
+            labelY: serviceTop + serviceHeight / 2,
+            labelPoints: [
+                {
+                    x: court.outerLeft + alleyWidth / 2,
+                    y: serviceTop + serviceHeight / 2,
+                    label: "Wide error"
+                },
+                {
+                    x: court.singlesRight + alleyWidth / 2,
+                    y: serviceTop + serviceHeight / 2,
+                    label: "Wide error"
+                }
+            ]
         },
         {
             key: "err_deep",
             label: "Deep errors",
-            shortLabel: "Deep",
+            shortLabel: "Deep error",
             isError: true,
-            rects: [makeRect(deepLeft, topSingles, deepWidth, bottomSingles - topSingles)],
-            labelX: deepLeft + deepWidth / 2,
-            labelY: mid
+            rects: [makeRect(court.singlesLeft, deepTop, court.singlesRight - court.singlesLeft, deepHeight)],
+            labelX: court.centerX,
+            labelY: deepTop + deepHeight / 2
         },
         {
             key: "err_wide_deep",
             label: "Wide-deep errors",
-            shortLabel: "Wide-deep",
+            shortLabel: "Wide-deep error",
             isError: true,
-            rects: corridorRects(deepLeft, deepWidth),
-            labelX: deepLeft + deepWidth / 2,
-            labelY: court.bottom - alleyHeight / 2
+            rects: corridorRects(deepTop, deepHeight),
+            labelX: court.outerLeft + alleyWidth / 2,
+            labelY: deepTop + deepHeight / 2,
+            labelPoints: [
+                {
+                    x: court.outerLeft + alleyWidth / 2,
+                    y: deepTop + deepHeight / 2,
+                    label: "Wide-deep error"
+                },
+                {
+                    x: court.singlesRight + alleyWidth / 2,
+                    y: deepTop + deepHeight / 2,
+                    label: "Wide-deep error"
+                }
+            ]
         }
     ];
 }
@@ -1609,6 +2051,12 @@ function updateFeatureText(featureData, eraId) {
         return;
     }
 
+    if (featureData.id === "finishes") {
+        updateFinishesText(featureData, eraId, selectedProfiles, estimatedProfiles, title, copy);
+        scatterCount.textContent = `${selectedProfiles.length} profiles`;
+        return;
+    }
+
     const distribution = featureData.distributions.get(eraId) || featureData.distributions.get("all");
     const volleyShare = distribution.values.find((item) => item.key === "Vo_shots")?.value || 0;
     const groundstrokeShare = distribution.values.find((item) => item.key === "Gs_shots")?.value || 0;
@@ -1649,19 +2097,41 @@ function updateServiceText(featureData, eraId, selectedProfiles, estimatedProfil
     copy.textContent = `${selectedProfiles.length} player-era profiles are highlighted. ${formatPercent(summary.shortPointPct)} of service points were won within three shots; ${topZone.label.toLowerCase()} is the largest mapped zone at ${formatPercent(topZone.value)}.${estimateNote} ${SERVICE_ERA_SUMMARIES[eraId]}`;
 }
 
+function updateFinishesText(featureData, eraId, selectedProfiles, estimatedProfiles, title, copy) {
+    const era = ERA_BY_ID[eraId];
+    const summary = featureData.summaries.get(eraId) || featureData.summaries.get("all");
+    const distribution = featureData.distributions.get(eraId) || featureData.distributions.get("all");
+    const topFinish = distribution.values.slice().sort((a, b) => b.value - a.value)[0];
+    const estimateNote = estimatedProfiles
+        ? ` ${estimatedProfiles} profiles use rank-derived point estimates where ATP point fields are missing.`
+        : "";
+
+    if (eraId === "all") {
+        title.textContent = featureData.allTitle;
+        copy.textContent = `${selectedProfiles.length} player-era profiles are visible. The average charted profile produces ${roundValue(summary.meanWinnersPerMatch)} winners per match, and the largest point-ending route is ${topFinish.label.toLowerCase()} at ${formatPercent(topFinish.value)}.${estimateNote}`;
+        return;
+    }
+
+    title.textContent = `${era.name} (${era.period})`;
+    copy.textContent = `${selectedProfiles.length} player-era profiles are highlighted. The era averages ${roundValue(summary.meanWinnersPerMatch)} winners per match; ${topFinish.label.toLowerCase()} make up ${formatPercent(topFinish.value)} of charted point endings.${estimateNote} ${FINISH_ERA_SUMMARIES[eraId]}`;
+}
+
 function getScatterTooltip(profile, featureData) {
     const pointLabel = profile.pointsEstimated
         ? `ATP point estimate: ${formatNumber(profile.atpPoints)} from best rank #${formatNumber(profile.bestRank)}`
         : `Peak ATP points: ${formatNumber(profile.atpPoints)}`;
+    const volumeLabel = featureData.id === "service"
+        ? `Service points: ${formatNumber(profile.pts)}`
+        : featureData.id === "finishes"
+            ? `Point endings: ${formatNumber(profile.finishTotal)}`
+            : `Charted shots: ${formatNumber(profile.totalTypeShots)}`;
 
     return [
         `<strong>${profile.player}</strong>`,
         `${profile.era.name}, ${profile.era.period}`,
-        `${featureData.scatterMetricLabel}: ${formatPercent(profile.xValue)}`,
+        `${featureData.scatterMetricLabel}: ${formatScatterXValue(profile.xValue, featureData)}`,
         pointLabel,
-        featureData.id === "service"
-            ? `Service points: ${formatNumber(profile.pts)}`
-            : `Charted shots: ${formatNumber(profile.totalTypeShots)}`
+        volumeLabel
     ].join("<br>");
 }
 
@@ -1817,6 +2287,27 @@ function interpolateColor(start, end, amount) {
     const endRgb = hexToRgb(end);
     const rgb = startRgb.map((channel, index) => Math.round(channel + (endRgb[index] - channel) * amount));
     return `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
+}
+
+function describePieSlice(centerX, centerY, radius, startAngle, endAngle) {
+    const safeEndAngle = Math.min(endAngle, startAngle + Math.PI * 2 - 0.0001);
+    const start = polarToCartesian(centerX, centerY, radius, startAngle);
+    const end = polarToCartesian(centerX, centerY, radius, safeEndAngle);
+    const largeArc = safeEndAngle - startAngle > Math.PI ? 1 : 0;
+
+    return [
+        `M ${centerX} ${centerY}`,
+        `L ${start.x} ${start.y}`,
+        `A ${radius} ${radius} 0 ${largeArc} 1 ${end.x} ${end.y}`,
+        "Z"
+    ].join(" ");
+}
+
+function polarToCartesian(centerX, centerY, radius, angle) {
+    return {
+        x: centerX + radius * Math.cos(angle),
+        y: centerY + radius * Math.sin(angle)
+    };
 }
 
 function interpolateHeatColor(amount) {

@@ -864,6 +864,10 @@ footer p {
     transition: opacity 0.5s ease, transform 0.5s ease, border-color 0.5s ease;
 }
 
+.rally-step[data-era="all"] {
+    margin-bottom: 16vh;
+}
+
 .rally-step:focus {
     outline: 2px solid #1e5bff;
     outline-offset: 6px;
@@ -952,10 +956,6 @@ footer p {
     gap: 30px;
 }
 
-.rally-visual-sticky[data-feature="service"] .rally-charts {
-    grid-template-columns: minmax(0, 0.88fr) minmax(0, 1.12fr);
-}
-
 .chart-card {
     background: transparent;
     border: 0;
@@ -978,6 +978,11 @@ footer p {
     border-bottom: 1px solid var(--rule);
     margin-bottom: 18px;
     padding-bottom: 12px;
+}
+
+.rally-visual-sticky[data-feature="service"] .chart-card:nth-child(2) .chart-card-header {
+    margin-bottom: 8px;
+    padding-bottom: 8px;
 }
 
 .detail-mode-selector {
@@ -1051,6 +1056,10 @@ footer p {
     position: relative;
 }
 
+.rally-visual-sticky[data-feature="service"] .chart-card:nth-child(2) .chart-host {
+    height: 500px;
+}
+
 .chart-svg {
     width: 100%;
     height: 100%;
@@ -1115,6 +1124,38 @@ footer p {
     font-weight: 700;
 }
 
+.pie-slice {
+    cursor: pointer;
+    stroke: rgba(255, 255, 255, 0.92);
+    stroke-width: 2;
+    transition: d 0.5s ease, fill 0.4s ease;
+    vector-effect: non-scaling-stroke;
+}
+
+.pie-legend-label {
+    fill: #303847;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.pie-legend-value {
+    fill: #596275;
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.pie-slice-label {
+    fill: #fff;
+    font-size: 12px;
+    font-weight: 800;
+    paint-order: stroke;
+    pointer-events: none;
+    stroke: rgba(27, 31, 42, 0.42);
+    stroke-linejoin: round;
+    stroke-width: 4px;
+    transition: opacity 0.35s ease, x 0.45s ease, y 0.45s ease;
+}
+
 .court-surface {
     fill: #eaf1e7;
     stroke: #6b765f;
@@ -1152,14 +1193,15 @@ footer p {
 }
 
 .court-zone-error {
-    stroke: rgba(115, 37, 32, 0.34);
+    stroke: rgba(150, 20, 18, 0.46);
 }
 
 .court-zone-target {
-    stroke: rgba(34, 83, 130, 0.34);
+    stroke: rgba(8, 83, 160, 0.44);
 }
 
-.court-zone-label {
+.court-zone-label,
+.court-group-label {
     fill: #22261f;
     font-size: 12px;
     font-weight: 800;
@@ -1171,7 +1213,8 @@ footer p {
     text-anchor: middle;
 }
 
-.court-zone-value {
+.court-zone-value,
+.court-group-value {
     fill: #383d34;
     font-size: 11px;
     font-weight: 700;
@@ -1181,6 +1224,15 @@ footer p {
     stroke-linejoin: round;
     stroke-width: 4px;
     text-anchor: middle;
+}
+
+.court-group-label {
+    font-size: 22px;
+    letter-spacing: 0;
+}
+
+.court-group-value {
+    font-size: 14px;
 }
 
 .era-legend {
@@ -1256,6 +1308,10 @@ footer p {
         min-height: auto;
     }
 
+    .rally-step[data-era="all"] {
+        margin-bottom: 4vh;
+    }
+
     .rally-visual-sticky {
         min-height: auto;
         order: 1;
@@ -1288,6 +1344,10 @@ footer p {
 
     .chart-host {
         height: 390px;
+    }
+
+    .rally-visual-sticky[data-feature="service"] .chart-card:nth-child(2) .chart-host {
+        height: 470px;
     }
 
     .chart-card-header {
