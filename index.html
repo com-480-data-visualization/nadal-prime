@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tennis Evolution: The Dominant Player Across Eras</title>
-    <link rel="stylesheet" href="css/style.css?v=eras-intro-fullband-20260526">
+    <link rel="stylesheet" href="css/style.css?v=service-default-20260526">
 </head>
 <body>
     <!-- Landing Section -->
@@ -166,8 +166,8 @@
         </div>
 
         <div class="feature-selector" aria-label="Feature family selector">
-            <button class="feature-pill active" type="button" data-feature="rally" aria-pressed="true">Rally</button>
-            <button class="feature-pill" type="button" data-feature="service" aria-pressed="false">Service</button>
+            <button class="feature-pill active" type="button" data-feature="service" aria-pressed="true">Service</button>
+            <button class="feature-pill" type="button" data-feature="rally" aria-pressed="false">Rally</button>
             <button class="feature-pill" type="button" data-feature="finishes" aria-pressed="false">Finishes</button>
         </div>
 
@@ -228,17 +228,17 @@
 
             <div class="rally-visual-sticky" aria-live="polite">
                 <div class="rally-status">
-                    <p class="status-kicker" id="feature-status-kicker">Rally feature family</p>
-                    <h3 id="rally-active-title">Loading rally profiles</h3>
-                    <p id="rally-active-copy">Preparing player-level shot percentages and ATP point context.</p>
+                    <p class="status-kicker" id="feature-status-kicker">Service feature family</p>
+                    <h3 id="rally-active-title">Loading service profiles</h3>
+                    <p id="rally-active-copy">Preparing short-point service rates and serve-location context.</p>
                 </div>
 
                 <div class="rally-charts">
                     <section class="chart-card">
                         <div class="chart-card-header">
                             <div>
-                                <h4 id="scatter-title">Volley Shot Percentage vs ATP Points</h4>
-                                <p id="scatter-subtitle">Missing ATP points use rank-derived estimates.</p>
+                                <h4 id="scatter-title">Short-Point Serve Rate vs ATP Points</h4>
+                                <p id="scatter-subtitle">X-axis is service points won in three shots or fewer divided by total service points.</p>
                             </div>
                             <span id="scatter-count" class="chart-stat">0 profiles</span>
                         </div>
@@ -248,10 +248,10 @@
                     <section class="chart-card">
                         <div class="chart-card-header">
                             <div>
-                                <h4 id="detail-title">Shot Type Percentage</h4>
-                                <p id="detail-subtitle">Aggregated rally shot distribution</p>
+                                <h4 id="detail-title">Service Heat Map</h4>
+                                <p id="detail-subtitle"></p>
                             </div>
-                            <div class="detail-mode-selector" id="service-heatmap-mode" hidden aria-label="Service heatmap mode">
+                            <div class="detail-mode-selector" id="service-heatmap-mode" aria-label="Service heatmap mode">
                                 <button class="heatmap-mode-button active" type="button" data-mode="inout" aria-pressed="true">In vs Out</button>
                                 <button class="heatmap-mode-button" type="button" data-mode="in" aria-pressed="false">In</button>
                                 <button class="heatmap-mode-button" type="button" data-mode="out" aria-pressed="false">Out</button>
@@ -269,6 +269,6 @@
         <p>&copy; 2026 Nadal Prime - COM-480 Data Visualization</p>
     </footer>
 
-    <script src="js/script.js?v=eras-intro-fullband-20260526"></script>
+    <script src="js/script.js?v=service-default-20260526"></script>
 </body>
 </html>

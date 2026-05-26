@@ -130,8 +130,8 @@ const FEATURE_META = {
         allTitle: "Service profiles across all eras",
         scatterTitle: "Short-Point Serve Rate vs ATP Points",
         scatterSubtitle: "X-axis is service points won in three shots or fewer divided by total service points.",
-        scatterXAxisLabel: "Service points won in <=3 shots",
-        scatterMetricLabel: "Serve points won in <=3 shots",
+        scatterXAxisLabel: "Service points won in less than 3 shots",
+        scatterMetricLabel: "Serve points won in less than 3 shots",
         scatterValueSuffix: "%",
         detailTitle: "Service Heat Map",
         detailSubtitle: "",
@@ -815,9 +815,9 @@ async function initializeRallyStory() {
         };
         const state = {
             activeEra: "all",
-            activeFeature: "rally",
+            activeFeature: "service",
             features,
-            currentData: features.rally,
+            currentData: features.service,
             scatterHost,
             detailHost,
             scatterChart: null,
@@ -841,7 +841,7 @@ async function initializeRallyStory() {
             button.addEventListener("click", () => setActiveFeature(state, button.dataset.feature));
         });
 
-        setActiveFeature(state, "rally", true);
+        setActiveFeature(state, "service", true);
         setupRallyScroll(state);
     } catch (error) {
         const message = "The playstyle charts could not load. Start the page through a local server so the CSV files are available.";
