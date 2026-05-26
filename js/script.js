@@ -229,10 +229,10 @@ function renderRankingError(container, error) {
 
 function loadRankingSeriesData() {
     if (!rankingSeriesPromise) {
-        rankingSeriesPromise = fetch("datasets/clean_datasets/all_rankings.csv")
+        rankingSeriesPromise = fetch("datasets/clean_datasets/top_5_rankings.csv")
             .then((response) => {
                 if (!response.ok) {
-                    throw new Error("all_rankings.csv is unavailable");
+                    throw new Error("top_5_rankings.csv is unavailable");
                 }
 
                 if (response.body && response.body.getReader && typeof TextDecoder !== "undefined") {
