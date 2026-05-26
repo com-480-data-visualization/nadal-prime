@@ -129,7 +129,7 @@ const FEATURE_META = {
         statusKicker: "Service feature family",
         allTitle: "Service profiles across all eras",
         scatterTitle: "Short-Point Serve Rate vs ATP Points",
-        scatterSubtitle: "X-axis is service points won in three shots or fewer divided by total service points.",
+        scatterSubtitle: "",
         scatterXAxisLabel: "Service points won in less than 3 shots",
         scatterMetricLabel: "Serve points won in less than 3 shots",
         scatterValueSuffix: "%",
@@ -2605,7 +2605,7 @@ function updateServiceText(featureData, eraId, selectedProfiles, estimatedProfil
 
     if (eraId === "all") {
         title.textContent = featureData.allTitle;
-        copy.textContent = `${selectedProfiles.length} player-era profiles are visible. ${formatPercent(summary.shortPointPct)} of charted service points were won within three shots, and the largest mapped zone is ${topZone.label.toLowerCase()} at ${formatPercent(topZone.value)}.${estimateNote}`;
+        copy.textContent = `The scatter plot shows how players across different eras compare in their tendency to win service points quickly, with 36% of all charted points won within three shots. The heat map visualizes where serves land and where they miss, with overall 29% of all serves failing to make it in.`;
         return;
     }
 
