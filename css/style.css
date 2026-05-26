@@ -1208,16 +1208,11 @@ footer p {
     stroke-width: 3.6;
 }
 
-.ranking-line-muted {
-    opacity: 0.5;
-    pointer-events: none;
-    stroke: #6f6a62;
-    stroke-width: 1.6;
-}
-
-.ranking-line-muted:hover {
-    opacity: 0.5;
-    stroke-width: 1.6;
+.ranking-transition-line {
+    opacity: 0.42;
+    stroke-dasharray: 2 5;
+    stroke-linecap: round;
+    stroke-width: 1.7;
 }
 
 .ranking-endpoint {
@@ -1225,9 +1220,9 @@ footer p {
     stroke-width: 1.4;
 }
 
-.ranking-label-rule {
-    opacity: 0.42;
-    stroke-width: 1;
+.ranking-legend-swatch {
+    stroke-linecap: round;
+    stroke-width: 3;
 }
 
 .ranking-player-label {
@@ -1237,6 +1232,12 @@ footer p {
     stroke: #fbfaf5;
     stroke-linejoin: round;
     stroke-width: 4px;
+}
+
+.ranking-legend-note {
+    fill: #68645d;
+    font-size: 10px;
+    font-weight: 700;
 }
 
 .ranking-no-data {

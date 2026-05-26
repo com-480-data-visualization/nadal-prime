@@ -102,8 +102,9 @@ const RANKING_LINE_COLORS = [
 const RANKING_MAX_RANK = 5;
 const RANKING_PRIMARY_PLAYER_COUNT = 7;
 const RANKING_SEGMENT_GAP = 0.72;
+const RANKING_EXIT_RANK = 5.62;
 const RANKING_ERA_START_OVERRIDES = {
-    open: 1973
+    open: 1976
 };
 let rankingSeriesPromise = null;
 
@@ -359,7 +360,8 @@ function finalizeRankingSeries(builder) {
     const byEra = new Map();
 
     builder.buckets.forEach((bucket, eraId) => {
-        const sampledRecords = getSampledRankingRecords(bucket.dates);
+        const sampledDates = getSampledRankingDates(bucket.dates);
+        const sampledRecords = getSampledRankingRecords(bucket.dates, sampledDates);
         const playerBuckets = new Map();
 
         sampledRecords.forEach((record) => {
@@ -392,8 +394,9 @@ function finalizeRankingSeries(builder) {
 
         byEra.set(eraId, {
             players,
+            sampledDates,
             totalTopFivePlayers: playerBuckets.size,
-            sampledDateCount: countSampledRankingDates(bucket.dates),
+            sampledDateCount: sampledDates.length,
             recordCount: sampledRecords.length
         });
     });
@@ -404,16 +407,11 @@ function finalizeRankingSeries(builder) {
     };
 }
 
-function getSampledRankingRecords(dates) {
-    const selectedDates = getSampledRankingDates(dates);
+function getSampledRankingRecords(dates, selectedDates = getSampledRankingDates(dates)) {
     return selectedDates.flatMap((date) => (dates.get(date) || [])
         .slice()
         .sort((a, b) => a.rank - b.rank)
         .filter((record) => record.rank <= RANKING_MAX_RANK));
-}
-
-function countSampledRankingDates(dates) {
-    return getSampledRankingDates(dates).length;
 }
 
 function getSampledRankingDates(dates) {
@@ -437,7 +435,7 @@ function createEraRankingChart(container, rankingData, era, meta) {
 
     const width = Math.max(container.clientWidth || 620, 360);
     const height = Math.max(container.clientHeight || 320, 280);
-    const margin = { top: 52, right: 148, bottom: 48, left: 48 };
+    const margin = { top: 52, right: 172, bottom: 56, left: 48 };
     const innerWidth = width - margin.left - margin.right;
     const innerHeight = height - margin.top - margin.bottom;
     const range = getRankingYearRange(era, meta);
@@ -517,23 +515,10 @@ function createEraRankingChart(container, rankingData, era, meta) {
     if (!players.length) {
         addNoRankingDataMessage(svg, era, meta, width, height);
     } else {
-        const labelData = [];
         const highlightedPlayers = getHighlightedRankingPlayers(players);
-        const highlightedPlayerNames = new Set(highlightedPlayers.map((player) => player.name));
-        const mutedPlayers = players.filter((player) => !highlightedPlayerNames.has(player.name));
-
-        mutedPlayers.forEach((player) => {
-            const records = player.records.filter((record) => record.x >= range.start && record.x <= range.end);
-            const pathData = buildRankingPath(records, xScale, yScale);
-
-            if (!pathData || !records.length) {
-                return;
-            }
-
-            svg.appendChild(createSvg("path", {
-                class: "ranking-line ranking-line-muted",
-                d: pathData
-            }));
+        const sampledDates = (rankingData?.sampledDates || []).filter((date) => {
+            const x = toDecimalYear(date);
+            return x >= range.start && x <= range.end;
         });
 
         highlightedPlayers.forEach((player, index) => {
@@ -544,6 +529,8 @@ function createEraRankingChart(container, rankingData, era, meta) {
             if (!pathData || !records.length) {
                 return;
             }
+
+            addRankingTransitionLines(svg, player, sampledDates, xScale, yScale, color);
 
             const path = createSvg("path", {
                 class: "ranking-line ranking-line-highlight",
@@ -572,17 +559,9 @@ function createEraRankingChart(container, rankingData, era, meta) {
                 r: 3.5,
                 fill: color
             }));
-
-            labelData.push({
-                player,
-                color,
-                x: lastX,
-                y: lastY,
-                label: formatRankingPlayerLabel(player.name)
-            });
         });
 
-        addRankingLabels(svg, labelData, width - margin.right + 12, margin.top, margin.top + innerHeight);
+        addRankingLegend(svg, highlightedPlayers, width - margin.right + 14, margin.top);
     }
 
     svg.appendChild(createSvg("text", {
@@ -627,6 +606,43 @@ function compareRankingPresence(a, b) {
         || a.name.localeCompare(b.name);
 }
 
+function addRankingTransitionLines(svg, player, sampledDates, xScale, yScale, color) {
+    if (sampledDates.length < 2) {
+        return;
+    }
+
+    const recordsByDate = new Map(player.records.map((record) => [record.date, record]));
+    let previousRecord = recordsByDate.get(sampledDates[0]) || null;
+    let previousDate = sampledDates[0];
+
+    for (let index = 1; index < sampledDates.length; index += 1) {
+        const currentDate = sampledDates[index];
+        const currentRecord = recordsByDate.get(currentDate) || null;
+        const previousX = toDecimalYear(previousDate);
+        const currentX = toDecimalYear(currentDate);
+
+        if (previousRecord && !currentRecord) {
+            addRankingTransitionLine(svg, xScale(previousRecord.x), yScale(previousRecord.rank), xScale(currentX), yScale(RANKING_EXIT_RANK), color);
+        } else if (!previousRecord && currentRecord) {
+            addRankingTransitionLine(svg, xScale(previousX), yScale(RANKING_EXIT_RANK), xScale(currentRecord.x), yScale(currentRecord.rank), color);
+        }
+
+        previousRecord = currentRecord;
+        previousDate = currentDate;
+    }
+}
+
+function addRankingTransitionLine(svg, x1, y1, x2, y2, color) {
+    svg.appendChild(createSvg("line", {
+        class: "ranking-transition-line",
+        x1,
+        y1,
+        x2,
+        y2,
+        stroke: color
+    }));
+}
+
 function buildRankingPath(records, xScale, yScale) {
     if (!records.length) {
         return "";
@@ -638,45 +654,46 @@ function buildRankingPath(records, xScale, yScale) {
     }, "").trim();
 }
 
-function addRankingLabels(svg, labelData, labelX, minY, maxY) {
-    const minGap = 13;
-    const labels = labelData
-        .slice()
-        .sort((a, b) => a.y - b.y)
-        .map((item) => ({ ...item, labelY: item.y }));
+function addRankingLegend(svg, players, x, y) {
+    players.forEach((player, index) => {
+        const color = RANKING_LINE_COLORS[index % RANKING_LINE_COLORS.length];
+        const rowY = y + index * 16;
 
-    labels.forEach((item, index) => {
-        if (index > 0 && item.labelY - labels[index - 1].labelY < minGap) {
-            item.labelY = labels[index - 1].labelY + minGap;
-        }
-    });
-
-    for (let index = labels.length - 1; index >= 0; index -= 1) {
-        if (labels[index].labelY > maxY) {
-            labels[index].labelY = maxY;
-        }
-        if (index < labels.length - 1 && labels[index + 1].labelY - labels[index].labelY < minGap) {
-            labels[index].labelY = labels[index + 1].labelY - minGap;
-        }
-    }
-
-    labels.forEach((item) => {
-        const labelY = clamp(item.labelY, minY, maxY);
         svg.appendChild(createSvg("line", {
-            class: "ranking-label-rule",
-            x1: item.x + 4,
-            x2: labelX - 5,
-            y1: item.y,
-            y2: labelY,
-            stroke: item.color
+            class: "ranking-legend-swatch",
+            x1: x,
+            x2: x + 15,
+            y1: rowY,
+            y2: rowY,
+            stroke: color
         }));
         svg.appendChild(createSvg("text", {
             class: "ranking-player-label",
-            x: labelX,
-            y: labelY + 4,
-            fill: item.color
-        }, item.label));
+            x: x + 20,
+            y: rowY + 4,
+            fill: color
+        }, formatRankingPlayerLabel(player.name)));
     });
+
+    const transitionY = y + players.length * 16 + 12;
+    svg.appendChild(createSvg("line", {
+        class: "ranking-transition-line ranking-legend-transition",
+        x1: x,
+        x2: x + 15,
+        y1: transitionY,
+        y2: transitionY,
+        stroke: "#68645d"
+    }));
+    svg.appendChild(createSvg("text", {
+        class: "ranking-legend-note",
+        x: x + 20,
+        y: transitionY - 3
+    }, "Leaves or"));
+    svg.appendChild(createSvg("text", {
+        class: "ranking-legend-note",
+        x: x + 20,
+        y: transitionY + 10
+    }, "enters top 5"));
 }
 
 function addNoRankingDataMessage(svg, era, meta, width, height) {
