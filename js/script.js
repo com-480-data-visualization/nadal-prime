@@ -435,7 +435,7 @@ function createEraRankingChart(container, rankingData, era, meta) {
 
     const width = Math.max(container.clientWidth || 620, 360);
     const height = Math.max(container.clientHeight || 320, 280);
-    const margin = { top: 52, right: 172, bottom: 56, left: 48 };
+    const margin = { top: 42, right: 172, bottom: 78, left: 48 };
     const innerWidth = width - margin.left - margin.right;
     const innerHeight = height - margin.top - margin.bottom;
     const range = getRankingYearRange(era, meta);
@@ -453,14 +453,14 @@ function createEraRankingChart(container, rankingData, era, meta) {
     svg.appendChild(createSvg("text", {
         class: "ranking-title",
         x: margin.left,
-        y: 22
-    }, `${era.name} ranking paths`));
+        y: 12
+    }, `${era.name} Top-5 ranking`));
 
     svg.appendChild(createSvg("text", {
         class: "ranking-subtitle",
         x: margin.left,
-        y: 40
-    }, `ATP top-${RANKING_MAX_RANK} snapshots twice per season, ${formatRankingPeriod(range)}`));
+        y: 28
+    }, `ATP top-${RANKING_MAX_RANK} snapshots twice per season, ${formatRankingPeriod(range, era)}`));
 
     const axisGroup = createSvg("g", { class: "chart-axis" });
     svg.appendChild(axisGroup);
@@ -575,7 +575,7 @@ function createEraRankingChart(container, rankingData, era, meta) {
     svg.appendChild(createSvg("text", {
         class: "ranking-axis-label",
         x: margin.left + innerWidth / 2,
-        y: height - 10,
+        y: margin.top + innerHeight + 46,
         "text-anchor": "middle"
     }, "Season"));
 
@@ -698,7 +698,7 @@ function addRankingLegend(svg, players, x, y) {
 
 function addNoRankingDataMessage(svg, era, meta, width, height) {
     const dataStartYear = Number.isFinite(meta?.minYear) ? Math.floor(meta.minYear) : null;
-    const period = formatRankingPeriod(getRankingYearRange(era, meta));
+    const period = formatRankingPeriod(getRankingYearRange(era, meta), era);
     const lines = dataStartYear && Number.isFinite(era.end) && era.end < dataStartYear
         ? [`Ranking file starts in ${dataStartYear}.`, `No top-${RANKING_MAX_RANK} records for ${period}.`]
         : [`No top-${RANKING_MAX_RANK} ranking records found`, `for ${period}.`];
@@ -736,8 +736,10 @@ function getRankingEraStart(era) {
     return RANKING_ERA_START_OVERRIDES[era.id] || era.start;
 }
 
-function formatRankingPeriod(range) {
-    return `${Math.round(range.start)}-${Math.round(range.labelEnd)}`;
+function formatRankingPeriod(range, era = null) {
+    const start = Math.round(range.start);
+    const label = `${start}-${Math.round(range.labelEnd)}`;
+    return era?.id === "open" ? `${label} (no ranking data before ${start})` : label;
 }
 
 function getYearTicks(startYear, endYear) {
