@@ -86,6 +86,27 @@ const FINISH_TYPES = [
     { key: "unforced", label: "Opponent unforced errors", color: "#6f7d95" }
 ];
 
+const RANKING_LINE_COLORS = [
+    "#1e5bff",
+    "#e25555",
+    "#00a878",
+    "#f59f00",
+    "#7c5ce0",
+    "#00a3b5",
+    "#d14d8b",
+    "#596275",
+    "#8a6d3b",
+    "#2f7d6d"
+];
+
+const RANKING_MAX_RANK = 5;
+const RANKING_PRIMARY_PLAYER_COUNT = 7;
+const RANKING_SEGMENT_GAP = 0.72;
+const RANKING_ERA_START_OVERRIDES = {
+    open: 1973
+};
+let rankingSeriesPromise = null;
+
 const FEATURE_META = {
     rally: {
         id: "rally",
@@ -147,85 +168,6 @@ const FINISH_ERA_SUMMARIES = {
     modern: "Modern profiles show point endings built from first-strike shots, aggressive groundstrokes, and the pressure to draw errors quickly."
 };
 
-// Era data: ATP points are indicative for the historical framing mini-charts.
-const eraData = {
-    era1: {
-        name: "Open Era Foundations (1968-1979)",
-        players: [
-            { rank: 1, name: "Rod Laver", points: 2500 },
-            { rank: 2, name: "Jimmy Connors", points: 2300 },
-            { rank: 3, name: "Bjorn Borg", points: 2100 },
-            { rank: 4, name: "Guillermo Vilas", points: 1900 },
-            { rank: 5, name: "Arthur Ashe", points: 1700 },
-            { rank: 6, name: "Stan Smith", points: 1500 },
-            { rank: 7, name: "Ken Rosewall", points: 1400 },
-            { rank: 8, name: "Tom Okker", points: 1200 },
-            { rank: 9, name: "Ilie Nastase", points: 1100 },
-            { rank: 10, name: "John McEnroe", points: 900 }
-        ]
-    },
-    era2: {
-        name: "Graphite Era (1980-1994)",
-        players: [
-            { rank: 1, name: "Ivan Lendl", points: 3200 },
-            { rank: 2, name: "John McEnroe", points: 3000 },
-            { rank: 3, name: "Jimmy Connors", points: 2800 },
-            { rank: 4, name: "Bjorn Borg", points: 2600 },
-            { rank: 5, name: "Pete Sampras", points: 2400 },
-            { rank: 6, name: "Boris Becker", points: 2200 },
-            { rank: 7, name: "Stefan Edberg", points: 2000 },
-            { rank: 8, name: "Michael Chang", points: 1800 },
-            { rank: 9, name: "Guillermo Vilas", points: 1600 },
-            { rank: 10, name: "Goran Ivanisevic", points: 1400 }
-        ]
-    },
-    era3: {
-        name: "Transition Era (1995-2007)",
-        players: [
-            { rank: 1, name: "Pete Sampras", points: 3500 },
-            { rank: 2, name: "Andre Agassi", points: 3300 },
-            { rank: 3, name: "Roger Federer", points: 3100 },
-            { rank: 4, name: "Goran Ivanisevic", points: 2800 },
-            { rank: 5, name: "Yevgeny Kafelnikov", points: 2600 },
-            { rank: 6, name: "Carlos Moya", points: 2400 },
-            { rank: 7, name: "Gustavo Kuerten", points: 2200 },
-            { rank: 8, name: "Marcelo Rios", points: 2000 },
-            { rank: 9, name: "Juan Carlos Ferrero", points: 1800 },
-            { rank: 10, name: "Tommy Haas", points: 1600 }
-        ]
-    },
-    era4: {
-        name: "Big 3 Era (2008-2019)",
-        players: [
-            { rank: 1, name: "Roger Federer", points: 4500 },
-            { rank: 2, name: "Rafael Nadal", points: 4800 },
-            { rank: 3, name: "Novak Djokovic", points: 5200 },
-            { rank: 4, name: "Andy Murray", points: 3200 },
-            { rank: 5, name: "David Ferrer", points: 2800 },
-            { rank: 6, name: "Dominic Thiem", points: 2400 },
-            { rank: 7, name: "Stan Wawrinka", points: 2200 },
-            { rank: 8, name: "Juan Martin del Potro", points: 2000 },
-            { rank: 9, name: "Milos Raonic", points: 1800 },
-            { rank: 10, name: "Kei Nishikori", points: 1600 }
-        ]
-    },
-    era5: {
-        name: "Modern Era (2020-Present)",
-        players: [
-            { rank: 1, name: "Carlos Alcaraz", points: 12050 },
-            { rank: 2, name: "Jannik Sinner", points: 11500 },
-            { rank: 3, name: "Alexander Zverev", points: 5110 },
-            { rank: 4, name: "Novak Djokovic", points: 4820 },
-            { rank: 5, name: "Felix Auger-Aliassime", points: 4190 },
-            { rank: 6, name: "Taylor Fritz", points: 4085 },
-            { rank: 7, name: "Alex De Minaur", points: 4080 },
-            { rank: 8, name: "Lorenzo Musetti", points: 3990 },
-            { rank: 9, name: "Ben Shelton", points: 3960 },
-            { rank: 10, name: "Jack Draper", points: 2990 }
-        ]
-    }
-};
-
 document.addEventListener("DOMContentLoaded", () => {
     initializeChartPlaceholders();
     addScrollAnimations();
@@ -236,69 +178,330 @@ function initializeChartPlaceholders() {
     const eraSections = document.querySelectorAll(".era-section");
 
     eraSections.forEach((section, index) => {
-        const eraKey = `era${index + 1}`;
+        const era = ERAS[index];
         const eraBox = section.querySelector(".era-box");
         const chartContent = section.querySelector(".chart-content");
-        const data = eraData[eraKey];
 
-        if (!eraBox || !chartContent || !data) {
+        if (!eraBox || !chartContent || !era) {
             return;
         }
 
         eraBox.addEventListener("mouseenter", () => {
-            createEraBarChart(chartContent, data);
+            section.dataset.rankingHover = "true";
+            renderRankingLoading(chartContent, era);
+            loadRankingSeriesData()
+                .then((rankingSeries) => {
+                    if (section.dataset.rankingHover === "true") {
+                        createEraRankingChart(chartContent, rankingSeries.byEra.get(era.id), era, rankingSeries.meta);
+                    }
+                })
+                .catch((error) => {
+                    if (section.dataset.rankingHover === "true") {
+                        renderRankingError(chartContent, error);
+                    }
+                });
         });
 
         eraBox.addEventListener("mouseleave", () => {
+            section.dataset.rankingHover = "false";
             chartContent.innerHTML = "";
             hideTooltip();
         });
     });
 }
 
-function createEraBarChart(container, data) {
+function renderRankingLoading(container, era) {
+    container.innerHTML = "";
+    const loading = document.createElement("div");
+    loading.className = "chart-loading";
+    loading.textContent = `Loading ${era.name} ranking paths...`;
+    container.appendChild(loading);
+}
+
+function renderRankingError(container, error) {
+    container.innerHTML = "";
+    const message = document.createElement("div");
+    message.className = "chart-error";
+    message.textContent = `Ranking data could not load: ${error.message}`;
+    container.appendChild(message);
+}
+
+function loadRankingSeriesData() {
+    if (!rankingSeriesPromise) {
+        rankingSeriesPromise = fetch("datasets/clean_datasets/all_rankings.csv")
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error("all_rankings.csv is unavailable");
+                }
+
+                if (response.body && response.body.getReader && typeof TextDecoder !== "undefined") {
+                    return parseRankingStream(response.body);
+                }
+
+                return response.text().then(parseRankingText);
+            })
+            .catch((error) => {
+                rankingSeriesPromise = null;
+                throw error;
+            });
+    }
+
+    return rankingSeriesPromise;
+}
+
+async function parseRankingStream(stream) {
+    const reader = stream.getReader();
+    const decoder = new TextDecoder();
+    const builder = createRankingSeriesBuilder();
+    let pending = "";
+
+    while (true) {
+        const { value, done } = await reader.read();
+
+        if (done) {
+            break;
+        }
+
+        pending += decoder.decode(value, { stream: true });
+        const lines = pending.split(/\r?\n/);
+        pending = lines.pop() || "";
+        lines.forEach((line) => addRankingRow(builder, line));
+    }
+
+    pending += decoder.decode();
+    if (pending) {
+        addRankingRow(builder, pending);
+    }
+
+    return finalizeRankingSeries(builder);
+}
+
+function parseRankingText(text) {
+    const builder = createRankingSeriesBuilder();
+    text.split(/\r?\n/).forEach((line) => addRankingRow(builder, line));
+    return finalizeRankingSeries(builder);
+}
+
+function createRankingSeriesBuilder() {
+    const buckets = new Map();
+
+    ERAS.forEach((era) => {
+        buckets.set(era.id, {
+            recordCount: 0,
+            dates: new Map()
+        });
+    });
+
+    return {
+        buckets,
+        meta: {
+            minYear: Infinity,
+            maxYear: -Infinity
+        }
+    };
+}
+
+function addRankingRow(builder, line) {
+    const cleanLine = line.trim();
+
+    if (!cleanLine || cleanLine.startsWith(",ranking_date")) {
+        return;
+    }
+
+    const values = cleanLine.split(",");
+    const dateValue = values[1];
+    const rank = toNumber(values[2]);
+
+    if (!dateValue || rank < 1 || rank > RANKING_MAX_RANK) {
+        return;
+    }
+
+    const year = parseYear(dateValue);
+    const era = getEraForYear(year);
+
+    if (!era) {
+        return;
+    }
+
+    if (year < getRankingEraStart(era)) {
+        return;
+    }
+
+    const bucket = builder.buckets.get(era.id);
+    const playerName = values.slice(5).join(",").replace(/^"|"$/g, "").trim();
+
+    if (!bucket || !playerName) {
+        return;
+    }
+
+    const decimalYear = toDecimalYear(dateValue);
+
+    if (!Number.isFinite(decimalYear)) {
+        return;
+    }
+
+    const record = {
+        x: decimalYear,
+        rank,
+        date: dateValue,
+        points: toNumber(values[4]),
+        playerName
+    };
+    const dateRecords = bucket.dates.get(dateValue) || [];
+    dateRecords.push(record);
+    bucket.dates.set(dateValue, dateRecords);
+    bucket.recordCount += 1;
+    builder.meta.minYear = Math.min(builder.meta.minYear, decimalYear);
+    builder.meta.maxYear = Math.max(builder.meta.maxYear, decimalYear);
+}
+
+function finalizeRankingSeries(builder) {
+    const byEra = new Map();
+
+    builder.buckets.forEach((bucket, eraId) => {
+        const sampledRecords = getSampledRankingRecords(bucket.dates);
+        const playerBuckets = new Map();
+
+        sampledRecords.forEach((record) => {
+            const player = playerBuckets.get(record.playerName) || {
+                name: record.playerName,
+                records: [],
+                recordCount: 0,
+                rankSum: 0,
+                bestRank: Infinity
+            };
+
+            player.records.push(record);
+            player.recordCount += 1;
+            player.rankSum += record.rank;
+            player.bestRank = Math.min(player.bestRank, record.rank);
+            playerBuckets.set(record.playerName, player);
+        });
+
+        const players = Array.from(playerBuckets.values())
+            .map((player) => ({
+                ...player,
+                averageRank: player.recordCount ? player.rankSum / player.recordCount : Infinity,
+                records: player.records.sort((a, b) => a.x - b.x)
+            }))
+            .sort((a, b) => {
+                const firstA = a.records[0]?.x || Infinity;
+                const firstB = b.records[0]?.x || Infinity;
+                return firstA - firstB || a.bestRank - b.bestRank || b.recordCount - a.recordCount || a.name.localeCompare(b.name);
+            });
+
+        byEra.set(eraId, {
+            players,
+            totalTopFivePlayers: playerBuckets.size,
+            sampledDateCount: countSampledRankingDates(bucket.dates),
+            recordCount: sampledRecords.length
+        });
+    });
+
+    return {
+        byEra,
+        meta: builder.meta
+    };
+}
+
+function getSampledRankingRecords(dates) {
+    const selectedDates = getSampledRankingDates(dates);
+    return selectedDates.flatMap((date) => (dates.get(date) || [])
+        .slice()
+        .sort((a, b) => a.rank - b.rank)
+        .filter((record) => record.rank <= RANKING_MAX_RANK));
+}
+
+function countSampledRankingDates(dates) {
+    return getSampledRankingDates(dates).length;
+}
+
+function getSampledRankingDates(dates) {
+    const selectedByHalf = new Map();
+
+    Array.from(dates.keys()).sort().forEach((date) => {
+        const year = parseYear(date);
+        const half = getRankingDateHalf(date);
+        const key = `${year}|${half}`;
+
+        if (!selectedByHalf.has(key)) {
+            selectedByHalf.set(key, date);
+        }
+    });
+
+    return Array.from(selectedByHalf.values()).sort();
+}
+
+function createEraRankingChart(container, rankingData, era, meta) {
     container.innerHTML = "";
 
-    const width = Math.max(container.clientWidth || 520, 320);
-    const height = Math.max(container.clientHeight || 300, 260);
-    const margin = { top: 16, right: 18, bottom: 92, left: 50 };
+    const width = Math.max(container.clientWidth || 620, 360);
+    const height = Math.max(container.clientHeight || 320, 280);
+    const margin = { top: 52, right: 148, bottom: 48, left: 48 };
     const innerWidth = width - margin.left - margin.right;
     const innerHeight = height - margin.top - margin.bottom;
-    const maxPoints = Math.max(...data.players.map((player) => player.points));
-    const xStep = innerWidth / data.players.length;
-    const barWidth = Math.max(10, xStep * 0.68);
-    const yMax = niceMax(maxPoints);
-    const yScale = (value) => margin.top + innerHeight - (value / yMax) * innerHeight;
+    const range = getRankingYearRange(era, meta);
+    const xScale = (value) => margin.left + ((value - range.start) / (range.end - range.start)) * innerWidth;
+    const yScale = (rank) => margin.top + ((rank - 1) / (RANKING_MAX_RANK - 1)) * innerHeight;
+    const players = rankingData?.players || [];
 
     const svg = createSvg("svg", {
         class: "chart-svg",
         viewBox: `0 0 ${width} ${height}`,
         role: "img",
-        "aria-label": `${data.name} top player ATP points`
+        "aria-label": `${era.name} ATP ranking time series`
     });
+
+    svg.appendChild(createSvg("text", {
+        class: "ranking-title",
+        x: margin.left,
+        y: 22
+    }, `${era.name} ranking paths`));
+
+    svg.appendChild(createSvg("text", {
+        class: "ranking-subtitle",
+        x: margin.left,
+        y: 40
+    }, `ATP top-${RANKING_MAX_RANK} snapshots twice per season, ${formatRankingPeriod(range)}`));
 
     const axisGroup = createSvg("g", { class: "chart-axis" });
     svg.appendChild(axisGroup);
 
-    getTicks(yMax, 4).forEach((tick) => {
-        const y = yScale(tick);
+    for (let rank = 1; rank <= RANKING_MAX_RANK; rank += 1) {
+        const y = yScale(rank);
         axisGroup.appendChild(createSvg("line", {
             x1: margin.left,
-            x2: width - margin.right,
+            x2: margin.left + innerWidth,
             y1: y,
             y2: y,
-            stroke: "#e3e7ef"
+            class: "ranking-grid-line"
         }));
         axisGroup.appendChild(createSvg("text", {
             x: margin.left - 8,
             y: y + 4,
             "text-anchor": "end"
-        }, formatNumber(tick)));
+        }, String(rank)));
+    }
+
+    getYearTicks(range.start, range.labelEnd).forEach((year) => {
+        const x = xScale(year);
+        axisGroup.appendChild(createSvg("line", {
+            x1: x,
+            x2: x,
+            y1: margin.top,
+            y2: margin.top + innerHeight,
+            class: "ranking-year-line"
+        }));
+        axisGroup.appendChild(createSvg("text", {
+            x,
+            y: margin.top + innerHeight + 20,
+            "text-anchor": "middle"
+        }, String(year)));
     });
 
     svg.appendChild(createSvg("line", {
         x1: margin.left,
-        x2: width - margin.right,
+        x2: margin.left + innerWidth,
         y1: margin.top + innerHeight,
         y2: margin.top + innerHeight,
         stroke: "#aeb7c8"
@@ -311,47 +514,260 @@ function createEraBarChart(container, data) {
         stroke: "#aeb7c8"
     }));
 
-    data.players.forEach((player, index) => {
-        const x = margin.left + index * xStep + (xStep - barWidth) / 2;
-        const y = yScale(player.points);
-        const barHeight = margin.top + innerHeight - y;
-        const color = interpolateColor("#2f80ed", "#7c5ce0", index / Math.max(1, data.players.length - 1));
-        const rect = createSvg("rect", {
-            x,
-            y,
-            width: barWidth,
-            height: barHeight,
-            fill: color,
-            opacity: "0.86",
-            rx: "3"
+    if (!players.length) {
+        addNoRankingDataMessage(svg, era, meta, width, height);
+    } else {
+        const labelData = [];
+        const highlightedPlayers = getHighlightedRankingPlayers(players);
+        const highlightedPlayerNames = new Set(highlightedPlayers.map((player) => player.name));
+        const mutedPlayers = players.filter((player) => !highlightedPlayerNames.has(player.name));
+
+        mutedPlayers.forEach((player) => {
+            const records = player.records.filter((record) => record.x >= range.start && record.x <= range.end);
+            const pathData = buildRankingPath(records, xScale, yScale);
+
+            if (!pathData || !records.length) {
+                return;
+            }
+
+            svg.appendChild(createSvg("path", {
+                class: "ranking-line ranking-line-muted",
+                d: pathData
+            }));
         });
 
-        rect.addEventListener("mousemove", (event) => {
-            showTooltip(event, `<strong>${player.name}</strong>ATP points: ${formatNumber(player.points)}`);
-        });
-        rect.addEventListener("mouseleave", hideTooltip);
+        highlightedPlayers.forEach((player, index) => {
+            const color = RANKING_LINE_COLORS[index % RANKING_LINE_COLORS.length];
+            const records = player.records.filter((record) => record.x >= range.start && record.x <= range.end);
+            const pathData = buildRankingPath(records, xScale, yScale);
 
-        svg.appendChild(rect);
-        svg.appendChild(createSvg("text", {
-            x: x + barWidth / 2,
-            y: margin.top + innerHeight + 12,
-            "text-anchor": "end",
-            transform: `rotate(-42 ${x + barWidth / 2} ${margin.top + innerHeight + 12})`,
-            fill: "#596275",
-            "font-size": "10"
-        }, player.name));
-    });
+            if (!pathData || !records.length) {
+                return;
+            }
+
+            const path = createSvg("path", {
+                class: "ranking-line ranking-line-highlight",
+                d: pathData,
+                stroke: color
+            });
+
+            path.addEventListener("mousemove", (event) => {
+                showTooltip(event, [
+                    `<strong>${player.name}</strong>`,
+                    `Best rank: #${formatNumber(player.bestRank)}`,
+                    `Average top-${RANKING_MAX_RANK} rank: #${roundValue(player.averageRank)}`,
+                    `Sampled top-${RANKING_MAX_RANK} appearances: ${formatNumber(player.recordCount)}`
+                ].join("<br>"));
+            });
+            path.addEventListener("mouseleave", hideTooltip);
+            svg.appendChild(path);
+
+            const lastRecord = records[records.length - 1];
+            const lastX = xScale(lastRecord.x);
+            const lastY = yScale(lastRecord.rank);
+            svg.appendChild(createSvg("circle", {
+                class: "ranking-endpoint",
+                cx: lastX,
+                cy: lastY,
+                r: 3.5,
+                fill: color
+            }));
+
+            labelData.push({
+                player,
+                color,
+                x: lastX,
+                y: lastY,
+                label: formatRankingPlayerLabel(player.name)
+            });
+        });
+
+        addRankingLabels(svg, labelData, width - margin.right + 12, margin.top, margin.top + innerHeight);
+    }
 
     svg.appendChild(createSvg("text", {
-        x: 16,
+        class: "ranking-axis-label",
+        x: 18,
         y: margin.top + innerHeight / 2,
         transform: `rotate(-90 16 ${margin.top + innerHeight / 2})`,
-        fill: "#596275",
-        "font-size": "11",
         "text-anchor": "middle"
-    }, "ATP points"));
+    }, "ATP rank"));
+
+    svg.appendChild(createSvg("text", {
+        class: "ranking-axis-label",
+        x: margin.left + innerWidth / 2,
+        y: height - 10,
+        "text-anchor": "middle"
+    }, "Season"));
 
     container.appendChild(svg);
+}
+
+function getHighlightedRankingPlayers(players) {
+    const primaryPlayers = players
+        .slice()
+        .sort(compareRankingPresence)
+        .slice(0, RANKING_PRIMARY_PLAYER_COUNT);
+    const highlighted = new Map(primaryPlayers.map((player) => [player.name, player]));
+
+    players
+        .filter((player) => player.bestRank === 1)
+        .sort(compareRankingPresence)
+        .forEach((player) => {
+            highlighted.set(player.name, player);
+        });
+
+    return Array.from(highlighted.values()).sort(compareRankingPresence);
+}
+
+function compareRankingPresence(a, b) {
+    return b.recordCount - a.recordCount
+        || a.bestRank - b.bestRank
+        || a.averageRank - b.averageRank
+        || a.name.localeCompare(b.name);
+}
+
+function buildRankingPath(records, xScale, yScale) {
+    if (!records.length) {
+        return "";
+    }
+
+    return records.reduce((path, record, index) => {
+        const command = index === 0 || record.x - records[index - 1].x > RANKING_SEGMENT_GAP ? "M" : "L";
+        return `${path}${command} ${xScale(record.x)} ${yScale(record.rank)} `;
+    }, "").trim();
+}
+
+function addRankingLabels(svg, labelData, labelX, minY, maxY) {
+    const minGap = 13;
+    const labels = labelData
+        .slice()
+        .sort((a, b) => a.y - b.y)
+        .map((item) => ({ ...item, labelY: item.y }));
+
+    labels.forEach((item, index) => {
+        if (index > 0 && item.labelY - labels[index - 1].labelY < minGap) {
+            item.labelY = labels[index - 1].labelY + minGap;
+        }
+    });
+
+    for (let index = labels.length - 1; index >= 0; index -= 1) {
+        if (labels[index].labelY > maxY) {
+            labels[index].labelY = maxY;
+        }
+        if (index < labels.length - 1 && labels[index + 1].labelY - labels[index].labelY < minGap) {
+            labels[index].labelY = labels[index + 1].labelY - minGap;
+        }
+    }
+
+    labels.forEach((item) => {
+        const labelY = clamp(item.labelY, minY, maxY);
+        svg.appendChild(createSvg("line", {
+            class: "ranking-label-rule",
+            x1: item.x + 4,
+            x2: labelX - 5,
+            y1: item.y,
+            y2: labelY,
+            stroke: item.color
+        }));
+        svg.appendChild(createSvg("text", {
+            class: "ranking-player-label",
+            x: labelX,
+            y: labelY + 4,
+            fill: item.color
+        }, item.label));
+    });
+}
+
+function addNoRankingDataMessage(svg, era, meta, width, height) {
+    const dataStartYear = Number.isFinite(meta?.minYear) ? Math.floor(meta.minYear) : null;
+    const period = formatRankingPeriod(getRankingYearRange(era, meta));
+    const lines = dataStartYear && Number.isFinite(era.end) && era.end < dataStartYear
+        ? [`Ranking file starts in ${dataStartYear}.`, `No top-${RANKING_MAX_RANK} records for ${period}.`]
+        : [`No top-${RANKING_MAX_RANK} ranking records found`, `for ${period}.`];
+
+    lines.forEach((line, index) => {
+        svg.appendChild(createSvg("text", {
+            class: "ranking-no-data",
+            x: width / 2,
+            y: height / 2 + index * 18,
+            "text-anchor": "middle"
+        }, line));
+    });
+}
+
+function getRankingYearRange(era, meta) {
+    const start = getRankingEraStart(era);
+
+    if (Number.isFinite(era.end)) {
+        return {
+            start,
+            end: era.end + 0.99,
+            labelEnd: era.end
+        };
+    }
+
+    const dataEnd = Number.isFinite(meta?.maxYear) ? meta.maxYear : new Date().getFullYear();
+    return {
+        start,
+        end: Math.max(start + 1, dataEnd),
+        labelEnd: Math.max(start + 1, Math.floor(dataEnd))
+    };
+}
+
+function getRankingEraStart(era) {
+    return RANKING_ERA_START_OVERRIDES[era.id] || era.start;
+}
+
+function formatRankingPeriod(range) {
+    return `${Math.round(range.start)}-${Math.round(range.labelEnd)}`;
+}
+
+function getYearTicks(startYear, endYear) {
+    const start = Math.round(startYear);
+    const end = Math.round(endYear);
+    const span = Math.max(1, end - start);
+    const step = span <= 6 ? 1 : span <= 12 ? 2 : span <= 18 ? 3 : 5;
+    const ticks = [start];
+
+    for (let year = Math.ceil((start + 1) / step) * step; year < end; year += step) {
+        ticks.push(year);
+    }
+
+    ticks.push(end);
+    return Array.from(new Set(ticks));
+}
+
+function toDecimalYear(dateValue) {
+    const [year, month = 1, day = 1] = String(dateValue).split("-").map((part) => Number.parseInt(part, 10));
+
+    if (!Number.isFinite(year)) {
+        return NaN;
+    }
+
+    const start = Date.UTC(year, 0, 1);
+    const next = Date.UTC(year + 1, 0, 1);
+    const current = Date.UTC(year, Math.max(0, month - 1), Math.max(1, day));
+
+    return year + (current - start) / (next - start);
+}
+
+function getRankingDateHalf(dateValue) {
+    const month = Number.parseInt(String(dateValue).slice(5, 7), 10);
+    return month <= 6 ? 0 : 1;
+}
+
+function formatRankingPlayerLabel(name) {
+    if (name.length <= 15) {
+        return name;
+    }
+
+    const parts = name.split(" ");
+    const compact = parts.length > 1
+        ? `${parts[0][0]}. ${parts.slice(1).join(" ")}`
+        : name;
+
+    return compact.length > 18 ? `${compact.slice(0, 16)}...` : compact;
 }
 
 async function initializeRallyStory() {
@@ -373,6 +789,7 @@ async function initializeRallyStory() {
             fetchCsv("datasets/clean_datasets/netpoints_stats.csv"),
             fetchCsv("datasets/clean_datasets/all_atp_matches.csv")
         ]);
+        updateEraAverageProfiles(atpRows);
         const strengthByPlayerEra = buildPlayerStrengthLookup(atpRows);
         const features = {
             rally: prepareRallyData(shotsRows, strengthByPlayerEra),
@@ -762,6 +1179,86 @@ function buildPlayerStrengthLookup(rows) {
     });
 
     return lookup;
+}
+
+function updateEraAverageProfiles(rows) {
+    const summaries = buildEraAverageProfiles(rows);
+
+    document.querySelectorAll("[data-era-profile]").forEach((profileBox) => {
+        const summary = summaries.get(profileBox.dataset.eraProfile);
+
+        setProfileStat(profileBox, "age", summary && Number.isFinite(summary.meanAge)
+            ? `${roundValue(summary.meanAge)} yrs`
+            : "--");
+        setProfileStat(profileBox, "height", summary && Number.isFinite(summary.meanHeight)
+            ? `${Math.round(summary.meanHeight)} cm`
+            : "--");
+        setProfileStat(profileBox, "duration", summary && Number.isFinite(summary.meanDuration)
+            ? `${Math.round(summary.meanDuration)} min`
+            : "--");
+    });
+}
+
+function buildEraAverageProfiles(rows) {
+    const buckets = new Map();
+
+    ERAS.forEach((era) => {
+        buckets.set(era.id, {
+            ageSum: 0,
+            ageCount: 0,
+            heightSum: 0,
+            heightCount: 0,
+            durationSum: 0,
+            durationCount: 0
+        });
+    });
+
+    rows.forEach((row) => {
+        const year = parseYear(row.tourney_date);
+        const era = getEraForYear(year);
+
+        if (!era) {
+            return;
+        }
+
+        const bucket = buckets.get(era.id);
+        addAverageProfileValue(bucket, "age", row.winner_age);
+        addAverageProfileValue(bucket, "age", row.loser_age);
+        addAverageProfileValue(bucket, "height", row.winner_ht);
+        addAverageProfileValue(bucket, "height", row.loser_ht);
+        addAverageProfileValue(bucket, "duration", row.minutes);
+    });
+
+    const summaries = new Map();
+
+    buckets.forEach((bucket, eraId) => {
+        summaries.set(eraId, {
+            meanAge: bucket.ageCount ? bucket.ageSum / bucket.ageCount : NaN,
+            meanHeight: bucket.heightCount ? bucket.heightSum / bucket.heightCount : NaN,
+            meanDuration: bucket.durationCount ? bucket.durationSum / bucket.durationCount : NaN
+        });
+    });
+
+    return summaries;
+}
+
+function addAverageProfileValue(bucket, metric, value) {
+    const number = toNumber(value);
+
+    if (number <= 0) {
+        return;
+    }
+
+    bucket[`${metric}Sum`] += number;
+    bucket[`${metric}Count`] += 1;
+}
+
+function setProfileStat(profileBox, key, value) {
+    const element = profileBox.querySelector(`[data-profile-stat="${key}"]`);
+
+    if (element) {
+        element.textContent = value;
+    }
 }
 
 function addStrengthRecord(lookup, eraId, player, pointsValue, rankValue) {

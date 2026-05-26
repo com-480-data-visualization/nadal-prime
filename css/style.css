@@ -324,6 +324,51 @@ body {
     text-align: left;
 }
 
+.era-average-profile {
+    display: grid;
+    gap: 12px;
+    max-width: 720px;
+    margin-top: 22px;
+    padding-top: 16px;
+    border-top: 1px solid var(--rule);
+}
+
+.era-average-title {
+    color: var(--ink-strong);
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    line-height: 1;
+    text-transform: uppercase;
+}
+
+.era-average-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.era-profile-pill {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 8px;
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.38);
+    color: var(--ink-soft);
+    font-size: 0.76rem;
+    font-weight: 700;
+    line-height: 1;
+    padding: 8px 11px;
+    white-space: nowrap;
+}
+
+.era-profile-pill strong {
+    color: var(--ink-strong);
+    font-size: 0.9rem;
+    font-weight: 800;
+}
+
 /* ==================== CHART PLACEHOLDER ==================== */
 
 .chart-placeholder {
@@ -1125,6 +1170,79 @@ footer p {
 
 .chart-grid line {
     stroke-dasharray: 2 4;
+}
+
+.ranking-title {
+    fill: #171717;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 17px;
+    font-weight: 700;
+}
+
+.ranking-subtitle,
+.ranking-axis-label {
+    fill: #68645d;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.ranking-grid-line {
+    stroke: #ddd7cc;
+    stroke-dasharray: 2 4;
+}
+
+.ranking-year-line {
+    stroke: #e7e1d6;
+}
+
+.ranking-line {
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 2.4;
+    transition: opacity 0.24s ease, stroke-width 0.24s ease;
+}
+
+.ranking-line:hover {
+    opacity: 0.86;
+    stroke-width: 3.6;
+}
+
+.ranking-line-muted {
+    opacity: 0.5;
+    pointer-events: none;
+    stroke: #6f6a62;
+    stroke-width: 1.6;
+}
+
+.ranking-line-muted:hover {
+    opacity: 0.5;
+    stroke-width: 1.6;
+}
+
+.ranking-endpoint {
+    stroke: #fbfaf5;
+    stroke-width: 1.4;
+}
+
+.ranking-label-rule {
+    opacity: 0.42;
+    stroke-width: 1;
+}
+
+.ranking-player-label {
+    font-size: 10.5px;
+    font-weight: 800;
+    paint-order: stroke;
+    stroke: #fbfaf5;
+    stroke-linejoin: round;
+    stroke-width: 4px;
+}
+
+.ranking-no-data {
+    fill: #706b62;
+    font-size: 13px;
+    font-weight: 700;
 }
 
 .scatter-point {
