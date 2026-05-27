@@ -431,7 +431,7 @@ function getSampledRankingDates(dates) {
 }
 
 function createEraRankingChart(container, rankingData, era, meta) {
-    container.innerHTML = "";
+    d3.select(container).html("");
 
     const width = Math.max(container.clientWidth || 620, 360);
     const height = Math.max(container.clientHeight || 320, 280);
@@ -439,78 +439,81 @@ function createEraRankingChart(container, rankingData, era, meta) {
     const innerWidth = width - margin.left - margin.right;
     const innerHeight = height - margin.top - margin.bottom;
     const range = getRankingYearRange(era, meta);
-    const xScale = (value) => margin.left + ((value - range.start) / (range.end - range.start)) * innerWidth;
-    const yScale = (rank) => margin.top + ((rank - 1) / (RANKING_MAX_RANK - 1)) * innerHeight;
+    const xScale = d3.scaleLinear()
+        .domain([range.start, range.end])
+        .range([margin.left, margin.left + innerWidth]);
+    const yScale = d3.scaleLinear()
+        .domain([1, RANKING_MAX_RANK])
+        .range([margin.top, margin.top + innerHeight]);
     const players = rankingData?.players || [];
 
-    const svg = createSvg("svg", {
-        class: "chart-svg",
-        viewBox: `0 0 ${width} ${height}`,
-        role: "img",
-        "aria-label": `${era.name} ATP ranking time series`
-    });
+    const svg = d3.select(container)
+        .append("svg")
+        .attr("class", "chart-svg")
+        .attr("viewBox", `0 0 ${width} ${height}`)
+        .attr("role", "img")
+        .attr("aria-label", `${era.name} ATP ranking time series`);
 
-    svg.appendChild(createSvg("text", {
+    appendSvg(svg, "text", {
         class: "ranking-title",
         x: margin.left,
         y: 12
-    }, `${era.name} Top-5 ranking`));
+    }, `${era.name} Top-5 ranking`);
 
-    svg.appendChild(createSvg("text", {
+    appendSvg(svg, "text", {
         class: "ranking-subtitle",
         x: margin.left,
         y: 28
-    }, `ATP top-${RANKING_MAX_RANK} snapshots twice per season, ${formatRankingPeriod(range, era)}`));
+    }, `ATP top-${RANKING_MAX_RANK} snapshots twice per season, ${formatRankingPeriod(range, era)}`);
 
-    const axisGroup = createSvg("g", { class: "chart-axis" });
-    svg.appendChild(axisGroup);
+    const axisGroup = svg.append("g").attr("class", "chart-axis");
 
     for (let rank = 1; rank <= RANKING_MAX_RANK; rank += 1) {
         const y = yScale(rank);
-        axisGroup.appendChild(createSvg("line", {
+        appendSvg(axisGroup, "line", {
             x1: margin.left,
             x2: margin.left + innerWidth,
             y1: y,
             y2: y,
             class: "ranking-grid-line"
-        }));
-        axisGroup.appendChild(createSvg("text", {
+        });
+        appendSvg(axisGroup, "text", {
             x: margin.left - 8,
             y: y + 4,
             "text-anchor": "end"
-        }, String(rank)));
+        }, String(rank));
     }
 
     getYearTicks(range.start, range.labelEnd).forEach((year) => {
         const x = xScale(year);
-        axisGroup.appendChild(createSvg("line", {
+        appendSvg(axisGroup, "line", {
             x1: x,
             x2: x,
             y1: margin.top,
             y2: margin.top + innerHeight,
             class: "ranking-year-line"
-        }));
-        axisGroup.appendChild(createSvg("text", {
+        });
+        appendSvg(axisGroup, "text", {
             x,
             y: margin.top + innerHeight + 20,
             "text-anchor": "middle"
-        }, String(year)));
+        }, String(year));
     });
 
-    svg.appendChild(createSvg("line", {
+    appendSvg(svg, "line", {
         x1: margin.left,
         x2: margin.left + innerWidth,
         y1: margin.top + innerHeight,
         y2: margin.top + innerHeight,
         stroke: "#aeb7c8"
-    }));
-    svg.appendChild(createSvg("line", {
+    });
+    appendSvg(svg, "line", {
         x1: margin.left,
         x2: margin.left,
         y1: margin.top,
         y2: margin.top + innerHeight,
         stroke: "#aeb7c8"
-    }));
+    });
 
     if (!players.length) {
         addNoRankingDataMessage(svg, era, meta, width, height);
@@ -532,54 +535,50 @@ function createEraRankingChart(container, rankingData, era, meta) {
 
             addRankingTransitionLines(svg, player, sampledDates, xScale, yScale, color);
 
-            const path = createSvg("path", {
+            appendSvg(svg, "path", {
                 class: "ranking-line ranking-line-highlight",
                 d: pathData,
                 stroke: color
-            });
-
-            path.addEventListener("mousemove", (event) => {
+            })
+            .on("mousemove", (event) => {
                 showTooltip(event, [
                     `<strong>${player.name}</strong>`,
                     `Best rank: #${formatNumber(player.bestRank)}`,
                     `Average top-${RANKING_MAX_RANK} rank: #${roundValue(player.averageRank)}`,
                     `Sampled top-${RANKING_MAX_RANK} appearances: ${formatNumber(player.recordCount)}`
                 ].join("<br>"));
-            });
-            path.addEventListener("mouseleave", hideTooltip);
-            svg.appendChild(path);
+            })
+            .on("mouseleave", hideTooltip);
 
             const lastRecord = records[records.length - 1];
             const lastX = xScale(lastRecord.x);
             const lastY = yScale(lastRecord.rank);
-            svg.appendChild(createSvg("circle", {
+            appendSvg(svg, "circle", {
                 class: "ranking-endpoint",
                 cx: lastX,
                 cy: lastY,
                 r: 3.5,
                 fill: color
-            }));
+            });
         });
 
         addRankingLegend(svg, highlightedPlayers, width - margin.right + 14, margin.top);
     }
 
-    svg.appendChild(createSvg("text", {
+    appendSvg(svg, "text", {
         class: "ranking-axis-label",
         x: 18,
         y: margin.top + innerHeight / 2,
         transform: `rotate(-90 16 ${margin.top + innerHeight / 2})`,
         "text-anchor": "middle"
-    }, "ATP rank"));
+    }, "ATP rank");
 
-    svg.appendChild(createSvg("text", {
+    appendSvg(svg, "text", {
         class: "ranking-axis-label",
         x: margin.left + innerWidth / 2,
         y: margin.top + innerHeight + 46,
         "text-anchor": "middle"
-    }, "Season"));
-
-    container.appendChild(svg);
+    }, "Season");
 }
 
 function getHighlightedRankingPlayers(players) {
@@ -633,14 +632,14 @@ function addRankingTransitionLines(svg, player, sampledDates, xScale, yScale, co
 }
 
 function addRankingTransitionLine(svg, x1, y1, x2, y2, color) {
-    svg.appendChild(createSvg("line", {
+    appendSvg(svg, "line", {
         class: "ranking-transition-line",
         x1,
         y1,
         x2,
         y2,
         stroke: color
-    }));
+    });
 }
 
 function buildRankingPath(records, xScale, yScale) {
@@ -648,10 +647,19 @@ function buildRankingPath(records, xScale, yScale) {
         return "";
     }
 
-    return records.reduce((path, record, index) => {
-        const command = index === 0 || record.x - records[index - 1].x > RANKING_SEGMENT_GAP ? "M" : "L";
-        return `${path}${command} ${xScale(record.x)} ${yScale(record.rank)} `;
-    }, "").trim();
+    const line = d3.line()
+        .x((record) => xScale(record.x))
+        .y((record) => yScale(record.rank));
+    const segments = records.reduce((groups, record, index) => {
+        if (index === 0 || record.x - records[index - 1].x > RANKING_SEGMENT_GAP) {
+            groups.push([]);
+        }
+
+        groups[groups.length - 1].push(record);
+        return groups;
+    }, []);
+
+    return segments.map((segment) => line(segment)).join(" ");
 }
 
 function addRankingLegend(svg, players, x, y) {
@@ -659,41 +667,41 @@ function addRankingLegend(svg, players, x, y) {
         const color = RANKING_LINE_COLORS[index % RANKING_LINE_COLORS.length];
         const rowY = y + index * 16;
 
-        svg.appendChild(createSvg("line", {
+        appendSvg(svg, "line", {
             class: "ranking-legend-swatch",
             x1: x,
             x2: x + 15,
             y1: rowY,
             y2: rowY,
             stroke: color
-        }));
-        svg.appendChild(createSvg("text", {
+        });
+        appendSvg(svg, "text", {
             class: "ranking-player-label",
             x: x + 20,
             y: rowY + 4,
             fill: color
-        }, formatRankingPlayerLabel(player.name)));
+        }, formatRankingPlayerLabel(player.name));
     });
 
     const transitionY = y + players.length * 16 + 12;
-    svg.appendChild(createSvg("line", {
+    appendSvg(svg, "line", {
         class: "ranking-transition-line ranking-legend-transition",
         x1: x,
         x2: x + 15,
         y1: transitionY,
         y2: transitionY,
         stroke: "#68645d"
-    }));
-    svg.appendChild(createSvg("text", {
+    });
+    appendSvg(svg, "text", {
         class: "ranking-legend-note",
         x: x + 20,
         y: transitionY - 3
-    }, "Leaves or"));
-    svg.appendChild(createSvg("text", {
+    }, "Leaves or");
+    appendSvg(svg, "text", {
         class: "ranking-legend-note",
         x: x + 20,
         y: transitionY + 10
-    }, "enters top 5"));
+    }, "enters top 5");
 }
 
 function addNoRankingDataMessage(svg, era, meta, width, height) {
@@ -704,12 +712,12 @@ function addNoRankingDataMessage(svg, era, meta, width, height) {
         : [`No top-${RANKING_MAX_RANK} ranking records found`, `for ${period}.`];
 
     lines.forEach((line, index) => {
-        svg.appendChild(createSvg("text", {
+        appendSvg(svg, "text", {
             class: "ranking-no-data",
             x: width / 2,
             y: height / 2 + index * 18,
             "text-anchor": "middle"
-        }, line));
+        }, line);
     });
 }
 
@@ -801,6 +809,10 @@ async function initializeRallyStory() {
     detailHost.innerHTML = '<div class="chart-loading">Loading feature distribution...</div>';
 
     try {
+        if (!window.d3) {
+            throw new Error("D3.js could not load. Check the D3 script tag in index.html.");
+        }
+
         const [shotsRows, serviceRows, overviewRows, netRows, atpRows] = await Promise.all([
             fetchCsv("datasets/clean_datasets/shots_stats.csv"),
             fetchCsv("datasets/clean_datasets/service_stats.csv"),
@@ -863,6 +875,10 @@ async function fetchCsv(path) {
 }
 
 function parseCsv(text) {
+    if (window.d3?.csvParse) {
+        return d3.csvParse(text);
+    }
+
     const lines = text.trim().split(/\r?\n/);
     if (!lines.length) {
         return [];
@@ -1474,8 +1490,21 @@ function addFinishCounts(target, source) {
     });
 }
 
+function appendSvg(selection, name, attributes = {}, text = "") {
+    const child = selection.append(name);
+    Object.entries(attributes).forEach(([key, value]) => {
+        child.attr(key, value);
+    });
+
+    if (text) {
+        child.text(text);
+    }
+
+    return child;
+}
+
 function createScatterChart(host, rallyData) {
-    host.innerHTML = "";
+    d3.select(host).html("");
 
     const width = 760;
     const height = 430;
@@ -1486,110 +1515,106 @@ function createScatterChart(host, rallyData) {
     const maxPoints = Math.max(...rallyData.scatterData.map((profile) => profile.atpPoints), 1);
     const xMax = Math.ceil((maxVolley + 1) / 2) * 2;
     const yMax = niceMax(maxPoints);
-    const xScale = (value) => margin.left + (value / xMax) * innerWidth;
-    const yScale = (value) => margin.top + innerHeight - (value / yMax) * innerHeight;
-    const svg = createSvg("svg", {
-        class: "chart-svg",
-        viewBox: `0 0 ${width} ${height}`
-    });
-    const grid = createSvg("g", { class: "chart-grid" });
-    const axes = createSvg("g", { class: "chart-axis" });
-    const pointsLayer = createSvg("g", { class: "scatter-points" });
-    const labelsLayer = createSvg("g", { class: "scatter-labels" });
+    const xScale = d3.scaleLinear()
+        .domain([0, xMax])
+        .range([margin.left, margin.left + innerWidth]);
+    const yScale = d3.scaleLinear()
+        .domain([0, yMax])
+        .range([margin.top + innerHeight, margin.top]);
+    const svg = d3.select(host)
+        .append("svg")
+        .attr("class", "chart-svg")
+        .attr("viewBox", `0 0 ${width} ${height}`);
+    const grid = svg.append("g").attr("class", "chart-grid");
+    const axes = svg.append("g").attr("class", "chart-axis");
+    const pointsLayer = svg.append("g").attr("class", "scatter-points");
+    const labelsLayer = svg.append("g").attr("class", "scatter-labels");
     const circles = new Map();
 
     getTicks(xMax, 6).forEach((tick) => {
         const x = xScale(tick);
-        grid.appendChild(createSvg("line", {
+        appendSvg(grid, "line", {
             x1: x,
             x2: x,
             y1: margin.top,
             y2: margin.top + innerHeight
-        }));
-        axes.appendChild(createSvg("text", {
+        });
+        appendSvg(axes, "text", {
             x,
             y: height - 30,
             "text-anchor": "middle"
-        }, formatScatterXValue(tick, rallyData)));
+        }, formatScatterXValue(tick, rallyData));
     });
 
     getTicks(yMax, 5).forEach((tick) => {
         const y = yScale(tick);
-        grid.appendChild(createSvg("line", {
+        appendSvg(grid, "line", {
             x1: margin.left,
             x2: width - margin.right,
             y1: y,
             y2: y
-        }));
-        axes.appendChild(createSvg("text", {
+        });
+        appendSvg(axes, "text", {
             x: margin.left - 10,
             y: y + 4,
             "text-anchor": "end"
-        }, formatNumber(tick)));
+        }, formatNumber(tick));
     });
 
-    axes.appendChild(createSvg("line", {
+    appendSvg(axes, "line", {
         x1: margin.left,
         x2: width - margin.right,
         y1: margin.top + innerHeight,
         y2: margin.top + innerHeight,
         stroke: "#aeb7c8"
-    }));
-    axes.appendChild(createSvg("line", {
+    });
+    appendSvg(axes, "line", {
         x1: margin.left,
         x2: margin.left,
         y1: margin.top,
         y2: margin.top + innerHeight,
         stroke: "#aeb7c8"
-    }));
-    axes.appendChild(createSvg("text", {
+    });
+    appendSvg(axes, "text", {
         class: "chart-axis-label",
         x: margin.left + innerWidth / 2,
         y: height - 6,
         "text-anchor": "middle"
-    }, rallyData.scatterXAxisLabel));
-    axes.appendChild(createSvg("text", {
+    }, rallyData.scatterXAxisLabel);
+    appendSvg(axes, "text", {
         class: "chart-axis-label",
         x: 18,
         y: margin.top + innerHeight / 2,
         transform: `rotate(-90 18 ${margin.top + innerHeight / 2})`,
         "text-anchor": "middle"
-    }, "ATP points or rank-derived estimate"));
-
-    svg.appendChild(grid);
-    svg.appendChild(axes);
+    }, "ATP points or rank-derived estimate");
 
     drawScatterLegend(svg, width);
 
-    rallyData.scatterData.forEach((profile) => {
-        const circle = createSvg("circle", {
-            class: "scatter-point",
-            cx: xScale(profile.xValue),
-            cy: yScale(profile.atpPoints),
-            r: "3.8",
-            fill: profile.era.color,
-            stroke: "#fff",
-            "stroke-width": "1.1",
-            opacity: "0.62"
-        });
-
-        circle.addEventListener("mousemove", (event) => {
+    pointsLayer.selectAll("circle")
+        .data(rallyData.scatterData, (profile) => profile.key)
+        .join("circle")
+        .attr("class", "scatter-point")
+        .attr("cx", (profile) => xScale(profile.xValue))
+        .attr("cy", (profile) => yScale(profile.atpPoints))
+        .attr("r", "3.8")
+        .attr("fill", (profile) => profile.era.color)
+        .attr("stroke", "#fff")
+        .attr("stroke-width", "1.1")
+        .attr("opacity", "0.62")
+        .on("mousemove", (event, profile) => {
             showTooltip(event, getScatterTooltip(profile, rallyData));
+        })
+        .on("mouseleave", hideTooltip)
+        .each(function(profile) {
+            circles.set(profile.key, this);
         });
-        circle.addEventListener("mouseleave", hideTooltip);
-
-        pointsLayer.appendChild(circle);
-        circles.set(profile.key, circle);
-    });
-
-    svg.appendChild(pointsLayer);
-    svg.appendChild(labelsLayer);
-    host.appendChild(svg);
 
     return {
-        svg,
-        pointsLayer,
-        labelsLayer,
+        svg: svg.node(),
+        pointsLayer: pointsLayer.node(),
+        labelsLayer: labelsLayer.node(),
+        labelsLayerSelection: labelsLayer,
         circles,
         xScale,
         yScale,
@@ -1605,29 +1630,29 @@ function drawScatterLegend(svg, width) {
     const y = 16;
 
     ERAS.forEach((era) => {
-        svg.appendChild(createSvg("circle", {
+        appendSvg(svg, "circle", {
             cx: x,
             cy: y,
             r: "4.5",
             fill: era.color
-        }));
-        svg.appendChild(createSvg("text", {
+        });
+        appendSvg(svg, "text", {
             x: x + 8,
             y: y + 4,
             fill: "#596275",
             "font-size": "11",
             "font-weight": "700"
-        }, era.name.replace(" Era", "")));
+        }, era.name.replace(" Era", ""));
         x += Math.min(142, Math.max(92, era.name.length * 6.6));
     });
 
-    svg.appendChild(createSvg("text", {
+    appendSvg(svg, "text", {
         x: width - 28,
         y: y + 4,
         fill: "#7d8797",
         "font-size": "11",
         "text-anchor": "end"
-    }, "Each dot = one player in one era"));
+    }, "Each dot = one player in one era");
 }
 
 function updateScatterChart(chart, selectedEra) {
@@ -1638,19 +1663,21 @@ function updateScatterChart(chart, selectedEra) {
     chart.data.scatterData.forEach((profile) => {
         const circle = chart.circles.get(profile.key);
         const isActive = isGlobal || activeKeys.has(profile.key);
+        const circleSelection = d3.select(circle);
 
-        circle.setAttribute("opacity", isGlobal ? "0.62" : (isActive ? "0.84" : "0.18"));
-        circle.setAttribute("r", isGlobal ? "3.8" : (isActive ? "5.4" : "3.1"));
-        circle.setAttribute("stroke", isActive && !isGlobal ? "#101622" : "#fff");
-        circle.setAttribute("stroke-width", isActive && !isGlobal ? "1.6" : "1.1");
-        circle.style.filter = isActive && !isGlobal ? "drop-shadow(0 2px 4px rgba(0, 0, 0, 0.18))" : "none";
+        circleSelection
+            .attr("opacity", isGlobal ? "0.62" : (isActive ? "0.84" : "0.18"))
+            .attr("r", isGlobal ? "3.8" : (isActive ? "5.4" : "3.1"))
+            .attr("stroke", isActive && !isGlobal ? "#101622" : "#fff")
+            .attr("stroke-width", isActive && !isGlobal ? "1.6" : "1.1")
+            .style("filter", isActive && !isGlobal ? "drop-shadow(0 2px 4px rgba(0, 0, 0, 0.18))" : "none");
 
         if (isActive && !isGlobal) {
             chart.pointsLayer.appendChild(circle);
         }
     });
 
-    chart.labelsLayer.innerHTML = "";
+    chart.labelsLayerSelection.html("");
     const labels = activeData
         .slice()
         .sort((a, b) => b.atpPoints - a.atpPoints)
@@ -1659,22 +1686,22 @@ function updateScatterChart(chart, selectedEra) {
     labels.forEach((profile) => {
         const placement = placeScatterLabel(profile, labels, chart);
 
-        chart.labelsLayer.appendChild(createSvg("line", {
+        appendSvg(chart.labelsLayerSelection, "line", {
             class: "scatter-label-line",
             x1: placement.pointX,
             y1: placement.pointY,
             x2: placement.anchor === "start" ? placement.x - 5 : placement.x + 5,
             y2: placement.y - 4,
             opacity: isGlobal ? "0.34" : "0.5"
-        }));
+        });
 
-        chart.labelsLayer.appendChild(createSvg("text", {
+        appendSvg(chart.labelsLayerSelection, "text", {
             class: "scatter-label",
             x: placement.x,
             y: placement.y,
             "text-anchor": placement.anchor,
             opacity: isGlobal ? "0.72" : "0.92"
-        }, profile.player));
+        }, profile.player);
     });
 }
 
@@ -1738,7 +1765,7 @@ function placeScatterLabel(profile, labels, chart) {
 }
 
 function createHistogramChart(host, rallyData) {
-    host.innerHTML = "";
+    d3.select(host).html("");
 
     const width = 560;
     const height = 430;
@@ -1747,88 +1774,96 @@ function createHistogramChart(host, rallyData) {
     const innerHeight = height - margin.top - margin.bottom;
     const values = Array.from(rallyData.distributions.values()).flatMap((distribution) => distribution.values.map((item) => item.value));
     const xMax = Math.ceil((Math.max(...values, 1) + 4) / 10) * 10;
-    const xScale = (value) => margin.left + (value / xMax) * innerWidth;
+    const xScale = d3.scaleLinear()
+        .domain([0, xMax])
+        .range([margin.left, margin.left + innerWidth]);
     const rowHeight = innerHeight / SHOT_TYPES.length;
     const barHeight = Math.min(28, rowHeight * 0.54);
-    const svg = createSvg("svg", {
-        class: "chart-svg",
-        viewBox: `0 0 ${width} ${height}`
-    });
+    const svg = d3.select(host)
+        .append("svg")
+        .attr("class", "chart-svg")
+        .attr("viewBox", `0 0 ${width} ${height}`);
     const bars = new Map();
     const valuesByKey = new Map();
 
     getTicks(xMax, 5).forEach((tick) => {
         const x = xScale(tick);
-        svg.appendChild(createSvg("line", {
+        appendSvg(svg, "line", {
             x1: x,
             x2: x,
             y1: margin.top - 10,
             y2: margin.top + innerHeight,
             stroke: "#e3e7ef",
             "stroke-dasharray": "2 4"
-        }));
-        svg.appendChild(createSvg("text", {
+        });
+        appendSvg(svg, "text", {
             class: "chart-tick-label",
             x,
             y: height - 16,
             "text-anchor": "middle"
-        }, `${roundValue(tick)}%`));
+        }, `${roundValue(tick)}%`);
     });
 
-    SHOT_TYPES.forEach((type, index) => {
-        const y = margin.top + index * rowHeight + (rowHeight - barHeight) / 2;
+    const rows = svg.selectAll("g.histogram-row")
+        .data(SHOT_TYPES, (type) => type.key)
+        .join("g")
+        .attr("class", "histogram-row")
+        .attr("transform", (type, index) => {
+            const y = margin.top + index * rowHeight + (rowHeight - barHeight) / 2;
+            return `translate(0 ${y})`;
+        });
 
-        svg.appendChild(createSvg("text", {
+    rows.each(function(type, index) {
+        const y = margin.top + index * rowHeight + (rowHeight - barHeight) / 2;
+        const row = d3.select(this);
+
+        appendSvg(row, "text", {
             class: "histogram-label",
             x: margin.left - 12,
-            y: y + barHeight / 2 + 4,
+            y: barHeight / 2 + 4,
             "text-anchor": "end"
-        }, type.label));
+        }, type.label);
 
-        svg.appendChild(createSvg("rect", {
+        appendSvg(row, "rect", {
             x: margin.left,
-            y,
+            y: 0,
             width: innerWidth,
             height: barHeight,
             fill: "#edf1f7",
             rx: "4"
-        }));
+        });
 
-        const bar = createSvg("rect", {
+        const bar = appendSvg(row, "rect", {
             class: "histogram-bar",
             x: margin.left,
-            y,
+            y: 0,
             width: 0,
             height: barHeight,
             fill: type.color,
             rx: "4"
         });
-        const valueText = createSvg("text", {
+        const valueText = appendSvg(row, "text", {
             class: "histogram-value",
             x: margin.left + 8,
-            y: y + barHeight / 2 + 4
+            y: barHeight / 2 + 4
         }, "0%");
 
-        bar.addEventListener("mousemove", (event) => {
-            const currentValue = Number(bar.dataset.value || 0);
+        bar.on("mousemove", (event) => {
+            const currentValue = Number(bar.node().dataset.value || 0);
             showTooltip(event, `<strong>${type.label}</strong>${formatPercent(currentValue)} of charted rally shots`);
         });
-        bar.addEventListener("mouseleave", hideTooltip);
+        bar.on("mouseleave", hideTooltip);
 
-        svg.appendChild(bar);
-        svg.appendChild(valueText);
-        bars.set(type.key, bar);
-        valuesByKey.set(type.key, valueText);
+        bars.set(type.key, bar.node());
+        valuesByKey.set(type.key, valueText.node());
     });
 
-    svg.appendChild(createSvg("text", {
+    appendSvg(svg, "text", {
         class: "chart-axis-label",
         x: margin.left + innerWidth / 2,
         y: height - 2,
         "text-anchor": "middle"
-    }, "Share of all rally shots"));
-
-    host.appendChild(svg);
+    }, "Share of all rally shots");
 
     return {
         type: "histogram",
@@ -1849,72 +1884,83 @@ function updateHistogramChart(chart, selectedEra) {
         const width = Math.max(2, chart.xScale(item.value) - chart.margin.left);
         const labelX = chart.margin.left + width + 8;
 
-        bar.setAttribute("width", width);
-        bar.setAttribute("fill", item.color);
+        d3.select(bar)
+            .attr("width", width)
+            .attr("fill", item.color);
         bar.dataset.value = item.value;
-        valueText.setAttribute("x", labelX);
-        valueText.textContent = formatPercent(item.value);
+        d3.select(valueText)
+            .attr("x", labelX)
+            .text(formatPercent(item.value));
     });
 }
 
 function createPieChart(host, featureData) {
-    host.innerHTML = "";
+    d3.select(host).html("");
 
     const width = 560;
     const height = 430;
     const centerX = 190;
     const centerY = 204;
     const radius = 158;
-    const svg = createSvg("svg", {
-        class: "chart-svg",
-        viewBox: `0 0 ${width} ${height}`
-    });
+    const svg = d3.select(host)
+        .append("svg")
+        .attr("class", "chart-svg")
+        .attr("viewBox", `0 0 ${width} ${height}`);
     const slices = new Map();
     const sliceLabels = new Map();
 
+    const sliceLayer = svg.append("g");
+    const labelLayer = svg.append("g");
+
+    sliceLayer.selectAll("path")
+        .data(FINISH_TYPES, (type) => type.key)
+        .join("path")
+        .attr("class", "pie-slice")
+        .attr("fill", (type) => type.color)
+        .attr("d", d3.arc()
+            .innerRadius(0)
+            .outerRadius(radius)
+            .startAngle(-Math.PI / 2)
+            .endAngle(-Math.PI / 2))
+        .attr("transform", `translate(${centerX} ${centerY})`)
+        .on("mousemove", function(event, type) {
+            showTooltip(event, `<strong>${type.label}</strong>${formatPercent(Number(this.dataset.value || 0))} of point endings`);
+        })
+        .on("mouseleave", hideTooltip)
+        .each(function(type) {
+            slices.set(type.key, this);
+        });
+
+    labelLayer.selectAll("text")
+        .data(FINISH_TYPES, (type) => type.key)
+        .join("text")
+        .attr("class", "pie-slice-label")
+        .attr("x", centerX)
+        .attr("y", centerY)
+        .attr("text-anchor", "middle")
+        .attr("opacity", "0")
+        .text("0%")
+        .each(function(type) {
+            sliceLabels.set(type.key, this);
+        });
+
     FINISH_TYPES.forEach((type, index) => {
-        const slice = createSvg("path", {
-            class: "pie-slice",
-            fill: type.color,
-            d: describePieSlice(centerX, centerY, radius, -Math.PI / 2, -Math.PI / 2)
-        });
-
-        slice.addEventListener("mousemove", (event) => {
-            showTooltip(event, `<strong>${type.label}</strong>${formatPercent(Number(slice.dataset.value || 0))} of point endings`);
-        });
-        slice.addEventListener("mouseleave", hideTooltip);
-
-        svg.appendChild(slice);
-        slices.set(type.key, slice);
-
-        const sliceLabel = createSvg("text", {
-            class: "pie-slice-label",
-            x: centerX,
-            y: centerY,
-            "text-anchor": "middle",
-            opacity: "0"
-        }, "0%");
-        svg.appendChild(sliceLabel);
-        sliceLabels.set(type.key, sliceLabel);
-
         const legendY = 104 + index * 40;
-        svg.appendChild(createSvg("rect", {
+        appendSvg(svg, "rect", {
             x: 390,
             y: legendY - 11,
             width: 12,
             height: 12,
             fill: type.color,
             rx: 2
-        }));
-        svg.appendChild(createSvg("text", {
+        });
+        appendSvg(svg, "text", {
             class: "pie-legend-label",
             x: 410,
             y: legendY
-        }, type.label));
+        }, type.label);
 
     });
-
-    host.appendChild(svg);
 
     return {
         type: "pie",
@@ -1929,28 +1975,31 @@ function createPieChart(host, featureData) {
 
 function updatePieChart(chart, selectedEra) {
     const distribution = chart.data.distributions.get(selectedEra) || chart.data.distributions.get("all");
-    let currentAngle = -Math.PI / 2;
     const total = Math.max(distribution.total, 1);
+    const pie = d3.pie()
+        .sort(null)
+        .value((item) => item.count)
+        .startAngle(-Math.PI / 2)
+        .endAngle(Math.PI * 1.5);
+    const arc = d3.arc().innerRadius(0).outerRadius(chart.radius);
+    const labelArc = d3.arc().innerRadius(chart.radius * 0.64).outerRadius(chart.radius * 0.64);
 
-    distribution.values.forEach((item) => {
+    pie(distribution.values).forEach((sliceDatum) => {
+        const item = sliceDatum.data;
         const slice = chart.slices.get(item.key);
         const sliceLabel = chart.sliceLabels.get(item.key);
-        const angle = (item.count / total) * Math.PI * 2;
-        const nextAngle = currentAngle + angle;
-        const labelAngle = currentAngle + angle / 2;
-        const labelRadius = chart.radius * 0.64;
-        const labelPoint = polarToCartesian(chart.centerX, chart.centerY, labelRadius, labelAngle);
+        const labelPoint = labelArc.centroid(sliceDatum);
 
-        slice.setAttribute("d", describePieSlice(chart.centerX, chart.centerY, chart.radius, currentAngle, nextAngle));
-        slice.setAttribute("fill", item.color);
+        d3.select(slice)
+            .attr("d", arc(sliceDatum))
+            .attr("fill", item.color);
         slice.dataset.value = item.value;
 
-        sliceLabel.setAttribute("x", labelPoint.x);
-        sliceLabel.setAttribute("y", labelPoint.y + 4);
-        sliceLabel.setAttribute("opacity", item.value >= 3 ? "1" : "0");
-        sliceLabel.textContent = formatPercent(item.value);
-
-        currentAngle = nextAngle;
+        d3.select(sliceLabel)
+            .attr("x", chart.centerX + labelPoint[0])
+            .attr("y", chart.centerY + labelPoint[1] + 4)
+            .attr("opacity", item.value >= 3 ? "1" : "0")
+            .text(formatPercent((item.count / total) * 100));
     });
 }
 
@@ -1981,16 +2030,16 @@ function updateDetailChart(chart, selectedEra) {
 }
 
 function createCourtHeatmapChart(host, serviceData) {
-    host.innerHTML = "";
+    d3.select(host).html("");
 
     const width = 540;
     const height = 560;
     const court = getCourtGeometry(width, height);
     const zoneShapes = buildServiceCourtZones(court);
-    const svg = createSvg("svg", {
-        class: "chart-svg",
-        viewBox: `0 0 ${width} ${height}`
-    });
+    const svg = d3.select(host)
+        .append("svg")
+        .attr("class", "chart-svg")
+        .attr("viewBox", `0 0 ${width} ${height}`);
     const zones = new Map();
     const labels = new Map();
     const values = new Map();
@@ -1998,44 +2047,41 @@ function createCourtHeatmapChart(host, serviceData) {
     const groupValues = new Map();
     const labelElements = [];
 
-    svg.appendChild(createSvg("rect", {
+    appendSvg(svg, "rect", {
         class: "court-surface",
         x: court.outerLeft,
         y: court.top,
         width: court.outerWidth,
         height: court.courtHeight,
         rx: 2
-    }));
+    });
 
     zoneShapes.forEach((shape) => {
-        const rects = shape.rects.map((zoneRect) => {
-            const rect = createSvg("rect", {
-                class: `court-zone ${shape.isError ? "court-zone-error" : "court-zone-target"}`,
-                x: zoneRect.x,
-                y: zoneRect.y,
-                width: zoneRect.width,
-                height: zoneRect.height,
-                rx: 2,
-                fill: "#dce8d8",
-                opacity: "0.74"
-            });
-
-            rect.addEventListener("mousemove", (event) => {
-                const mode = rect.dataset.mode;
-                const kind = rect.dataset.kind;
+        const rects = svg.selectAll(`rect[data-zone="${shape.key}"]`)
+            .data(shape.rects)
+            .join("rect")
+            .attr("class", `court-zone ${shape.isError ? "court-zone-error" : "court-zone-target"}`)
+            .attr("data-zone", shape.key)
+            .attr("x", (zoneRect) => zoneRect.x)
+            .attr("y", (zoneRect) => zoneRect.y)
+            .attr("width", (zoneRect) => zoneRect.width)
+            .attr("height", (zoneRect) => zoneRect.height)
+            .attr("rx", 2)
+            .attr("fill", "#dce8d8")
+            .attr("opacity", "0.74")
+            .on("mousemove", function(event) {
+                const mode = this.dataset.mode;
+                const kind = this.dataset.kind;
                 const suffix = mode === "inout"
                     ? "of all mapped serves"
                     : `of ${kind === "in" ? "in serves" : "serve errors"}`;
                 const tooltipLabel = mode === "inout"
                     ? (kind === "in" ? "In serves" : "Serve errors")
                     : shape.label;
-                showTooltip(event, `<strong>${tooltipLabel}</strong>${formatPercent(Number(rect.dataset.value || 0))} ${suffix}`);
-            });
-            rect.addEventListener("mouseleave", hideTooltip);
-
-            svg.appendChild(rect);
-            return rect;
-        });
+                showTooltip(event, `<strong>${tooltipLabel}</strong>${formatPercent(Number(this.dataset.value || 0))} ${suffix}`);
+            })
+            .on("mouseleave", hideTooltip)
+            .nodes();
 
         const labelPoints = shape.labelPoints || [{
             x: shape.labelX,
@@ -2046,16 +2092,16 @@ function createCourtHeatmapChart(host, serviceData) {
         const zoneValues = [];
 
         labelPoints.forEach((point) => {
-            const label = createSvg("text", {
+            const label = appendSvg(svg, "text", {
                 class: "court-zone-label",
                 x: point.x,
                 y: point.y - 4
-            }, point.label || shape.shortLabel || shape.label);
-            const value = createSvg("text", {
+            }, point.label || shape.shortLabel || shape.label).node();
+            const value = appendSvg(svg, "text", {
                 class: "court-zone-value",
                 x: point.x,
                 y: point.y + 13
-            }, "0%");
+            }, "0%").node();
 
             labelElements.push(label, value);
             zoneLabels.push(label);
@@ -2081,18 +2127,18 @@ function createCourtHeatmapChart(host, serviceData) {
             y: (court.baselineTop + court.topServiceLine) / 2
         }
     ].forEach((group) => {
-        const label = createSvg("text", {
+        const label = appendSvg(svg, "text", {
             class: "court-group-label",
             x: group.x,
             y: group.y - 6,
             opacity: "0"
-        }, group.label);
-        const value = createSvg("text", {
+        }, group.label).node();
+        const value = appendSvg(svg, "text", {
             class: "court-group-value",
             x: group.x,
             y: group.y + 17,
             opacity: "0"
-        }, "0%");
+        }, "0%").node();
 
         labelElements.push(label, value);
         groupLabels.set(group.key, label);
@@ -2101,19 +2147,17 @@ function createCourtHeatmapChart(host, serviceData) {
 
     drawCourtLines(svg, court);
     labelElements.forEach((element) => {
-        svg.appendChild(element);
+        svg.node().appendChild(element);
     });
 
-    svg.appendChild(createSvg("text", {
+    appendSvg(svg, "text", {
         x: width / 2,
         y: height - 18,
         fill: "#68645d",
         "font-size": "12",
         "font-weight": "700",
         "text-anchor": "middle"
-    }, "Receiving service boxes and serve error zones"));
-
-    host.appendChild(svg);
+    }, "Receiving service boxes and serve error zones");
 
     const chart = {
         type: "court",
@@ -2155,19 +2199,22 @@ function updateCourtHeatmapChart(chart, selectedEra) {
         const showZoneText = modeValue.visible && !showAggregate;
 
         rects.forEach((rect) => {
-            rect.setAttribute("fill", color);
-            rect.setAttribute("opacity", String(opacity));
+            d3.select(rect)
+                .attr("fill", color)
+                .attr("opacity", String(opacity));
             rect.dataset.value = modeValue.value;
             rect.dataset.mode = chart.mode;
             rect.dataset.kind = modeValue.kind;
         });
 
         valueTexts.forEach((valueText) => {
-            valueText.textContent = showZoneText ? formatPercent(modeValue.value) : "";
-            valueText.setAttribute("opacity", showZoneText ? "1" : "0");
+            d3.select(valueText)
+                .text(showZoneText ? formatPercent(modeValue.value) : "")
+                .attr("opacity", showZoneText ? "1" : "0");
         });
         labelTexts.forEach((labelText) => {
-            labelText.setAttribute("opacity", showZoneText ? "1" : "0");
+            d3.select(labelText)
+                .attr("opacity", showZoneText ? "1" : "0");
         });
     });
 
@@ -2180,12 +2227,13 @@ function updateCourtGroupLabel(chart, key, value, visible) {
     const valueText = chart.groupValues.get(key);
 
     if (label) {
-        label.setAttribute("opacity", visible ? "1" : "0");
+        d3.select(label).attr("opacity", visible ? "1" : "0");
     }
 
     if (valueText) {
-        valueText.textContent = visible ? formatPercent(value) : "";
-        valueText.setAttribute("opacity", visible ? "1" : "0");
+        d3.select(valueText)
+            .text(visible ? formatPercent(value) : "")
+            .attr("opacity", visible ? "1" : "0");
     }
 }
 
@@ -2298,16 +2346,16 @@ function drawCourtLines(svg, court) {
     ];
 
     lines.forEach(([tag, attrs]) => {
-        svg.appendChild(createSvg(tag, attrs));
+        appendSvg(svg, tag, attrs);
     });
 
-    svg.appendChild(createSvg("line", {
+    appendSvg(svg, "line", {
         class: "court-net",
         x1: court.outerLeft - 18,
         x2: court.outerRight + 18,
         y1: court.netY,
         y2: court.netY
-    }));
+    });
 }
 
 function buildServiceCourtZones(court) {
@@ -2695,20 +2743,6 @@ function normalizeName(value) {
 function toNumber(value) {
     const number = Number(value);
     return Number.isFinite(number) ? number : 0;
-}
-
-function createSvg(name, attributes = {}, text = "") {
-    const element = document.createElementNS("http://www.w3.org/2000/svg", name);
-
-    Object.entries(attributes).forEach(([key, value]) => {
-        element.setAttribute(key, value);
-    });
-
-    if (text) {
-        element.textContent = text;
-    }
-
-    return element;
 }
 
 function getTicks(max, count) {
