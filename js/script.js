@@ -128,13 +128,13 @@ const FEATURE_META = {
         selectorLabel: "Service",
         statusKicker: "Service feature family",
         allTitle: "Service profiles across all eras",
-        scatterTitle: "Short-Point Serve Rate vs ATP Points",
-        scatterSubtitle: "",
+        scatterTitle: "Percentage of Points w/ High Service Impact vs ATP Points",
+        scatterSubtitle: "Missing ATP points use rank-derived estimates.",
         scatterXAxisLabel: "Service points won in less than 3 shots",
         scatterMetricLabel: "Serve points won in less than 3 shots",
         scatterValueSuffix: "%",
         detailTitle: "Service Heat Map",
-        detailSubtitle: "",
+        detailSubtitle: "Distribution of service outcomes across zones",
         detailType: "court"
     },
     finishes: {
@@ -154,11 +154,11 @@ const FEATURE_META = {
 };
 
 const SERVICE_ERA_SUMMARIES = {
-    open: "Short service points show how first-strike tennis could still shape the wood-racket game, even before modern serve speeds.",
-    graphite: "Graphite frames made the serve a more direct weapon, increasing the value of points settled before a neutral rally could form.",
-    transition: "Bigger serves and stronger first balls start to pair with baseline patterns, so quick service points become part of a broader attacking package.",
-    big3: "The elite profile is not only about raw serving: top players combine quick holds with enough rally depth to survive when the serve comes back.",
-    modern: "Modern servers hunt early control aggressively, using pace, direction, and the plus-one shot to shorten service games."
+    open: "Players show low service domination in points and a strong serve was not yet a prerequisite for success, a reflection of the limitations of wooden rackets. In heat map, wide errors are relatively rare while net and deep errors dominate the fault distribution.",
+    graphite: "Graphite frames made the serve a more direct weapon, increasing the value of points settled before a neutral rally could form. This era is characterized by an over-dominance of service at the top level.",
+    transition: "Powerful serves start to pair with baseline patterns, so quick service points become part of a broader attacking package. Newcomers are adapting to the serve power, which leads to longer points and less service dominance. The introduction of polyester strings and the continuous technological improvement helped the development of these new defensive skills.",
+    big3: "In this new era of excellence, the serve remains a key weapon, but the best players are also strong returners and baseliners, leading to more balanced profiles. The heat map shows a more even distribution of service errors, with wide and deep errors becoming more common as players push for aggressive placements.",
+    modern: "In the Modern era, the top player all cluster tightly around a 35–45% short-point serve rate, despite having very different playing styles. This convergence likely reflects how the modern game has been optimized to a point where elite players, regardless of their individual approach, are forced to operate within the same tactical window."
 };
 
 const FINISH_ERA_SUMMARIES = {
@@ -2467,22 +2467,27 @@ function setupRallyScroll(state) {
 }
 
 function getClosestStep(steps) {
-    const anchor = window.innerHeight * 0.5;
-    let closestStep = null;
-    let closestDistance = Infinity;
+    const anchor = window.innerHeight * 0.68;
+    let activeStep = steps[0] || null;
 
-    steps.forEach((step) => {
-        const rect = step.getBoundingClientRect();
-        const center = rect.top + rect.height / 2;
-        const distance = Math.abs(center - anchor);
+    for (let index = 0; index < steps.length - 1; index += 1) {
+        const currentStep = steps[index];
+        const nextStep = steps[index + 1];
+        const currentRect = currentStep.getBoundingClientRect();
+        const nextRect = nextStep.getBoundingClientRect();
+        const currentCenter = currentRect.top + currentRect.height / 2;
+        const nextCenter = nextRect.top + nextRect.height / 2;
+        const thresholdRatio = currentStep.dataset.era === "all" ? 0.78 : 0.5;
+        const threshold = currentCenter + (nextCenter - currentCenter) * thresholdRatio;
 
-        if (distance < closestDistance) {
-            closestDistance = distance;
-            closestStep = step;
+        if (anchor >= threshold) {
+            activeStep = nextStep;
+        } else {
+            break;
         }
-    });
+    }
 
-    return closestStep;
+    return activeStep;
 }
 
 function setActiveFeature(state, featureId, force = false) {
@@ -2534,7 +2539,7 @@ function setActiveRallyEra(state, eraId, force = false) {
 
     if (state.visual) {
         state.visual.dataset.activeEra = eraId;
-        state.visual.style.setProperty("--era-color", era?.color || "#1d5f9f");
+        state.visual.style.setProperty("--era-color", era?.color || "#9b27c8");
         state.visual.classList.add("is-transitioning");
         window.clearTimeout(state.transitionTimer);
         state.transitionTimer = window.setTimeout(() => {
@@ -2585,10 +2590,7 @@ function updateFeatureText(featureData, eraId) {
         copy.textContent = `${selectedProfiles.length} player-era profiles are visible. Groundstrokes account for ${formatPercent(groundstrokeShare)} of charted rally shots overall, while volleys account for ${formatPercent(volleyShare)}.${estimateNote}`;
     } else {
         title.textContent = `${era.name} (${era.period})`;
-        const estimateNote = estimatedProfiles
-            ? ` ${estimatedProfiles} profiles use rank-derived point estimates because ATP point fields are unavailable for that era.`
-            : "";
-        copy.textContent = `${selectedProfiles.length} player-era profiles are highlighted. Volleys make up ${formatPercent(volleyShare)} of charted rally shots in this era.${estimateNote} ${era.summary}`;
+        copy.textContent = era.summary;
     }
 
     scatterCount.textContent = `${selectedProfiles.length} profiles`;
@@ -2596,13 +2598,6 @@ function updateFeatureText(featureData, eraId) {
 
 function updateServiceText(featureData, eraId, selectedProfiles, estimatedProfiles, title, copy) {
     const era = ERA_BY_ID[eraId];
-    const summary = featureData.summaries.get(eraId) || featureData.summaries.get("all");
-    const distribution = featureData.zoneDistributions.get(eraId) || featureData.zoneDistributions.get("all");
-    const topZone = distribution.values.slice().sort((a, b) => b.value - a.value)[0];
-    const estimateNote = estimatedProfiles
-        ? ` ${estimatedProfiles} profiles use rank-derived point estimates where ATP point fields are missing.`
-        : "";
-
     if (eraId === "all") {
         title.textContent = featureData.allTitle;
         copy.textContent = `The scatter plot shows how players across different eras compare in their tendency to win service points quickly, with 36% of all charted points won within three shots. The heat map visualizes where serves land and where they miss, with overall 29% of all serves failing to make it in.`;
@@ -2610,7 +2605,7 @@ function updateServiceText(featureData, eraId, selectedProfiles, estimatedProfil
     }
 
     title.textContent = `${era.name} (${era.period})`;
-    copy.textContent = `${selectedProfiles.length} player-era profiles are highlighted. ${formatPercent(summary.shortPointPct)} of service points were won within three shots; ${topZone.label.toLowerCase()} is the largest mapped zone at ${formatPercent(topZone.value)}.${estimateNote} ${SERVICE_ERA_SUMMARIES[eraId]}`;
+    copy.textContent = SERVICE_ERA_SUMMARIES[eraId];
 }
 
 function updateFinishesText(featureData, eraId, selectedProfiles, estimatedProfiles, title, copy) {
@@ -2629,7 +2624,7 @@ function updateFinishesText(featureData, eraId, selectedProfiles, estimatedProfi
     }
 
     title.textContent = `${era.name} (${era.period})`;
-    copy.textContent = `${selectedProfiles.length} player-era profiles are highlighted. The era averages ${roundValue(summary.meanWinnersPerMatch)} winners per match; ${topFinish.label.toLowerCase()} make up ${formatPercent(topFinish.value)} of charted point endings.${estimateNote} ${FINISH_ERA_SUMMARIES[eraId]}`;
+    copy.textContent = FINISH_ERA_SUMMARIES[eraId];
 }
 
 function getScatterTooltip(profile, featureData) {
