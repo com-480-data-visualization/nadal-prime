@@ -6,7 +6,7 @@ const ERAS = [
         start: 1968,
         end: 1979,
         color: "#2f80ed",
-        summary: "Net play remains prominent in the charted profile, matching an era shaped by wood rackets, lower rally speeds, and forward court positioning."
+        summary: "This is the era of serve-and-volley, where volleys, slices and lobs account for 38% of shots while groundstrokes are not as dominant as in the later eras. That profile fits the wood-racket game, where control, variation, and forward court positioning mattered as much as baseline play."
     },
     {
         id: "graphite",
@@ -15,7 +15,7 @@ const ERAS = [
         start: 1980,
         end: 1994,
         color: "#00a878",
-        summary: "Graphite power increases the ceiling of the sport, but elite profiles still contain many players comfortable turning rallies into net attacks."
+        summary: "Groundstrokes rise to 71% and volleys fall to 10%, showing the first major move away from pure serve-and-volley patterns. Graphite frames add pace from the back of the court, while a lot of players is still attached to the serve-and-volley pattern."
     },
     {
         id: "transition",
@@ -24,7 +24,7 @@ const ERAS = [
         start: 1995,
         end: 2007,
         color: "#f59f00",
-        summary: "The relationship between volley share and dominance loosens as polyester strings, heavier topspin, and stronger defense push more value into baseline exchanges."
+        summary: "Groundstrokes jump to 80% and volleys drop to about 5%, making this the clearest break from the older forward-court profile. Polyester strings, heavier topspin, and better movement shift rally value toward baseline construction and defensive playstyle while the chart still keeps visible traces of attacking net play."
     },
     {
         id: "big3",
@@ -33,7 +33,7 @@ const ERAS = [
         start: 2008,
         end: 2019,
         color: "#e25555",
-        summary: "The highest ATP point totals now sit inside complete baseline-first profiles: the net is still useful, but it is no longer the main source of separation."
+        summary: "The Big 3 era is the most baseline-heavy section of the rally chart, with groundstrokes at 84% and volleys near 3%. Dominance now comes from repeatable rally control, depth, and defense, while net play becomes a finishing option rather than the center of the profile."
     },
     {
         id: "modern",
@@ -42,7 +42,7 @@ const ERAS = [
         start: 2020,
         end: Infinity,
         color: "#7c5ce0",
-        summary: "Modern shot patterns keep the rally compact and aggressive, with volleys used as tactical finishers rather than the core of the dominant profile."
+        summary: "Modern profiles remain strongly baseline-oriented, while drop shots and slices become slightly more visible. It suggests a game optimized around heavy groundstroke pressure, with variety used to disrupt opponents rather than define the main pattern."
     }
 ];
 
@@ -143,7 +143,7 @@ const FEATURE_META = {
         statusKicker: "Finishes feature family",
         allTitle: "Point-ending profiles across all eras",
         scatterTitle: "Mean Winners per Match vs ATP Points",
-        scatterSubtitle: "X-axis is each player-era profile's average winners per charted match.",
+        scatterSubtitle: "Missing ATP points use rank-derived estimates.",
         scatterXAxisLabel: "Mean winners per match",
         scatterMetricLabel: "Mean winners per match",
         scatterValueSuffix: "",
@@ -162,11 +162,11 @@ const SERVICE_ERA_SUMMARIES = {
 };
 
 const FINISH_ERA_SUMMARIES = {
-    open: "The available point-ending data emphasizes a sport where cleaner winners and opponent mistakes both matter, with finishing patterns still tied to forward-court pressure.",
-    graphite: "More racket power expands the winner profile, while errors remain a major part of how points end under faster exchanges.",
-    transition: "Baseline aggression makes forehand and backhand winners more visible as players learn to finish without always moving forward.",
+    open: "The important proportion of net and passing winners, accounting for 28% of finishes, shows the dominance of the serve-and-volley strategy during this era. Due to the woden rackets and the slow pace of the game, the number of winners per match do not correlate with elite playstyle.",
+    graphite: "Graphite is the highest winner-output era. Aces rise to 8% and net winners stay high at 16%, showing how new racket power adds first-strike value without immediately removing the attacking net game.",
+    transition: "Players in this era adapt to the increased power of the serve, leading to less winners and longer rallies. The finish profile moves away from closing at net and toward baseline pressure, where heavier shots force rushed replies and mistakes.",
     big3: "Elite finishers combine winners with patience: forcing one more ball and collecting opponent errors becomes part of dominance.",
-    modern: "Modern profiles show point endings built from first-strike shots, aggressive groundstrokes, and the pressure to draw errors quickly."
+    modern: "The modern finish profile is still influenced by the Big 3 era, with a similar distribution of finish types. However, the number of winners per match increases, as the match duration and physical demand grow."
 };
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -2587,7 +2587,7 @@ function updateFeatureText(featureData, eraId) {
         const estimateNote = estimatedProfiles
             ? ` ${estimatedProfiles} profiles use rank-derived point estimates where ranking-point fields are missing.`
             : "";
-        copy.textContent = `${selectedProfiles.length} player-era profiles are visible. Groundstrokes account for ${formatPercent(groundstrokeShare)} of charted rally shots overall, while volleys account for ${formatPercent(volleyShare)}.${estimateNote}`;
+        copy.textContent = `The scatter plot shows the players' tendency of net attacking plays, with 3.7% of shots being volleys overall. The histogram shows the diversity of shot types, traducing a preference for groundstrokes across eras.`;
     } else {
         title.textContent = `${era.name} (${era.period})`;
         copy.textContent = era.summary;
@@ -2619,7 +2619,7 @@ function updateFinishesText(featureData, eraId, selectedProfiles, estimatedProfi
 
     if (eraId === "all") {
         title.textContent = featureData.allTitle;
-        copy.textContent = `${selectedProfiles.length} player-era profiles are visible. The average charted profile produces ${roundValue(summary.meanWinnersPerMatch)} winners per match, and the largest point-ending route is ${topFinish.label.toLowerCase()} at ${formatPercent(topFinish.value)}.${estimateNote}`;
+        copy.textContent = `The scatter plot shows the agressivity of players, reflected by the average number of winners per match. The pie chart shows the distribution of point endings, with 57% of points won by an attack from the player.`;
         return;
     }
 
