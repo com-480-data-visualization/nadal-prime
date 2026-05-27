@@ -2477,7 +2477,7 @@ function getClosestStep(steps) {
         const nextRect = nextStep.getBoundingClientRect();
         const currentCenter = currentRect.top + currentRect.height / 2;
         const nextCenter = nextRect.top + nextRect.height / 2;
-        const thresholdRatio = currentStep.dataset.era === "all" ? 0.78 : 0.5;
+        const thresholdRatio = currentStep.dataset.era === "all" ? 0.88 : 0.5;
         const threshold = currentCenter + (nextCenter - currentCenter) * thresholdRatio;
 
         if (anchor >= threshold) {

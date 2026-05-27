@@ -978,23 +978,42 @@ footer p {
     display: flex;
     flex-direction: column;
     gap: 10vh;
-    padding: 5vh 0 1vh;
+    padding: 5vh 0 4vh;
 }
 
 .rally-step {
+    position: relative;
     min-height: 34vh;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-left: 1px solid var(--rule);
+    border-left: 0;
     padding: 24px 0 24px 18px;
     opacity: 0.34;
     transform: translateX(0);
-    transition: opacity 0.5s ease, transform 0.5s ease, border-color 0.5s ease;
+    transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.rally-step::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 50%;
+    width: 1px;
+    height: 34vh;
+    max-height: calc(100% - 48px);
+    background: var(--rule);
+    transform: translateY(-50%);
+    transition: background 0.5s ease;
 }
 
 .rally-step[data-era="all"] {
-    margin-bottom: 16vh;
+    min-height: 82vh;
+    margin-bottom: 10vh;
+}
+
+.rally-step[data-era="modern"] {
+    min-height: 82vh;
 }
 
 .rally-step:focus {
@@ -1003,9 +1022,12 @@ footer p {
 }
 
 .rally-step.is-active {
-    border-color: var(--era-color, #9b27c8);
     opacity: 1;
     transform: translateX(4px);
+}
+
+.rally-step.is-active::before {
+    background: var(--era-color, #9b27c8);
 }
 
 .status-kicker {
