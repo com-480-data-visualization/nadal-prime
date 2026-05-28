@@ -90,6 +90,21 @@ See [`Milestone_2/Milestone_2.pdf`](./Milestone_2/Milestone_2.pdf).
 
 **80% of the final grade**
 
+### Technical Setup and Intended Usage
+
+The final visualization has been deployed online via GitHub Pages and is accessible at [this link]( https://com-480-data-visualization.github.io/nadal-prime/).
+
+The main source files are `index.html`, `css/style.css`, and `js/script.js`. The visualizations are built with HTML, CSS, JavaScript, SVG, and D3.js, and they load the data from CSV files located in `datasets/clean_datasets/`, including shot statistics, service statistics, point-ending statistics, ATP match metadata, and pre-filtered top-5 ranking data. D3.js is used for data parsing, scales, SVG rendering, and chart updates. The interaction logic is handled in `js/script.js`, which manages feature selection, scroll-driven era changes, hover tooltips, and D3-based chart updates.
+
+This website tells the story of how elite men's tennis changed across eras. The goal is not to rank the greatest players with one fixed definition of dominance, but to show that dominance depends on the context of the game. Wooden rackets, graphite frames, polyester strings, physical preparation, and tactical innovation all changed what a top ATP player needed to do well.
+
+The experience is organized as a scroll-based visual story. In the first part called **Defining the Eras**, users first learn why tennis history is divided into distinct periods thanks to the historical context. By hovering over the era image, you can see the top-5 ranking evolution during an era, to know which players shaped each one.
+
+While scrolling down, you reach the **Playstyle Evolution** part, where users can switch between **Service**, **Rally**, and **Finishes** feature families to study how players created advantages, built points, and finished rallies. These three sections mainly define a tennis point and allow the user to understand the changes in the game.
+
+The most important idea is comparison across time. Each feature family begins with an **All Eras** overview, then narrows to era-specific views where the active era is highlighted and the others are muted. This lets users see both long term trends and important changes, always accompanied by the historical context.
+
+Each feature family begins with a short historical explanation that frames the plots and highlights what to look for. The left side of the page always shows a scatter plot comparing one representative metric from the selected feature family with each player's ATP points, making it possible to compare player profiles and era-level patterns. Hovering over a point reveals more detailed information about the corresponding player profile. The right side contains a feature specific visualization chosen to best summarize that family: a service heat map, a rally shot distribution and a point-ending breakdown.
 
 ## Late policy
 
