@@ -857,6 +857,17 @@ async function initializeRallyStory() {
 
         setActiveFeature(state, "service", true);
         setupRallyScroll(state);
+        
+        function syncStickyHeaderHeight() {
+            const header = document.querySelector(".playstyle-sticky-header");
+            if (!header) return;
+            const height = header.getBoundingClientRect().height;
+            document.documentElement.style.setProperty("--sticky-header-height", `${height}px`);
+        }
+
+        syncStickyHeaderHeight();
+        window.addEventListener("resize", syncStickyHeaderHeight);
+
     } catch (error) {
         const message = "The playstyle charts could not load. Start the page through a local server so the CSV files are available.";
         scatterHost.innerHTML = `<div class="chart-error">${message}</div>`;
@@ -2491,26 +2502,25 @@ function buildServiceCourtZones(court) {
 }
 
 function setupRallyScroll(state) {
-    let ticking = false;
+    const header = document.querySelector(".playstyle-sticky-header");
+    const headerHeight = header ? header.getBoundingClientRect().height : 0;
+    const headerPct = Math.ceil((headerHeight / window.innerHeight) * 100) + 2;
 
-    const requestUpdate = () => {
-        if (ticking) {
-            return;
+    const observer = new IntersectionObserver(
+        (entries) => {
+            entries.forEach((entry) => {
+                if (entry.isIntersecting) {
+                    setActiveRallyEra(state, entry.target.dataset.era);
+                }
+            });
+        },
+        {
+            rootMargin: `-${headerPct + 32}% 0px -48% 0px`,
+            threshold: 0
         }
+    );
 
-        ticking = true;
-        window.requestAnimationFrame(() => {
-            ticking = false;
-            const activeStep = getClosestStep(state.steps);
-            if (activeStep) {
-                setActiveRallyEra(state, activeStep.dataset.era);
-            }
-        });
-    };
-
-    window.addEventListener("scroll", requestUpdate, { passive: true });
-    window.addEventListener("resize", requestUpdate);
-    requestUpdate();
+    state.steps.forEach((step) => observer.observe(step));
 }
 
 function getClosestStep(steps) {
@@ -2537,9 +2547,23 @@ function getClosestStep(steps) {
     return activeStep;
 }
 
+const visitedFeatures = new Set(["service"]);
+
 function setActiveFeature(state, featureId, force = false) {
     if (!force && state.activeFeature === featureId) {
         return;
+    }
+    
+    if (!force && (featureId === "rally" || featureId === "finishes") 
+        && !visitedFeatures.has(featureId) // scroll only first click, user might want to compare player in different features
+    ) {
+        visitedFeatures.add(featureId);
+        
+        const playstyleSection = document.querySelector(".playstyle-container");
+        if (playstyleSection) {
+            const top = playstyleSection.getBoundingClientRect().top + window.scrollY;
+            window.scrollTo({ top, behavior: "smooth" });
+        }
     }
 
     const featureData = state.features[featureId];

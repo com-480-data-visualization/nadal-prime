@@ -946,6 +946,20 @@ footer p {
     padding: 62px 36px 18px;
 }
 
+.playstyle-sticky-header {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    background: #fbfaf5;
+    padding: 18px 0 12px;
+    border-bottom: 1px solid #e8e3d8;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+}
+
+.playstyle-sticky-header .section-title {
+    margin-bottom: 12px;
+}
+
 .playstyle-header {
     margin-bottom: 18px;
 }
@@ -1096,8 +1110,8 @@ footer p {
 
 .rally-visual-sticky {
     position: sticky;
-    top: 8px;
-    min-height: calc(100vh - 32px);
+    top: calc(var(--sticky-header-height, 0px) + 8px);
+    min-height: calc(100vh - var(--sticky-header-height, 0px) - 32px);
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
