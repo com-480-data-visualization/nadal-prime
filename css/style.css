@@ -91,6 +91,38 @@ body {
     }
 }
 
+.photo-credit {
+    position: absolute;
+    bottom: 16px;
+    right: 16px;
+    z-index: 3;
+    font-size: 0.72rem;
+    color: rgba(255, 255, 255, 0.62);
+    text-decoration: none;
+    letter-spacing: 0.03em;
+    transition: color 0.2s;
+}
+
+.photo-credit:hover {
+    color: rgba(255, 255, 255, 0.92);
+}
+
+.era-photo-credit {
+    position: absolute;
+    bottom: 8px;
+    right: 10px;
+    z-index: 3;
+    font-size: 0.65rem;
+    color: rgba(255, 255, 255, 0.48);
+    text-decoration: none;
+    letter-spacing: 0.03em;
+    transition: color 0.18s;
+}
+
+.era-photo-credit:hover {
+    color: rgba(255, 255, 255, 0.86);
+}
+
 /* ==================== TRANSITION SECTION ==================== */
 
 .transition-section {
