@@ -1584,3 +1584,23 @@ footer p {
         align-self: flex-start;
     }
 }
+
+.scatter-point {
+    opacity: 0.62;
+    r: 3.8px;
+    stroke: #fff;
+    stroke-width: 1.1px;
+    transition: opacity 0.18s, r 0.18s;
+}
+
+.scatter-point.is-dimmed {
+    opacity: 0.18;
+    r: 3.1px;
+}
+
+.scatter-point.is-highlighted {
+    opacity: 0.84;
+    r: 5.4px;
+    stroke: #101622;
+    stroke-width: 1.6px;
+}

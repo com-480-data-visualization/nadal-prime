@@ -1662,18 +1662,17 @@ function updateScatterChart(chart, selectedEra) {
 
     chart.data.scatterData.forEach((profile) => {
         const circle = chart.circles.get(profile.key);
-        const isActive = isGlobal || activeKeys.has(profile.key);
-        const circleSelection = d3.select(circle);
+        if (!circle) return;
 
-        circleSelection
-            .attr("opacity", isGlobal ? "0.62" : (isActive ? "0.84" : "0.18"))
-            .attr("r", isGlobal ? "3.8" : (isActive ? "5.4" : "3.1"))
-            .attr("stroke", isActive && !isGlobal ? "#101622" : "#fff")
-            .attr("stroke-width", isActive && !isGlobal ? "1.6" : "1.1")
-            .style("filter", isActive && !isGlobal ? "drop-shadow(0 2px 4px rgba(0, 0, 0, 0.18))" : "none");
-
-        if (isActive && !isGlobal) {
+        if (isGlobal) {
+            circle.classList.remove("is-highlighted", "is-dimmed");
+        } else if (activeKeys.has(profile.key)) {
+            circle.classList.add("is-highlighted");
+            circle.classList.remove("is-dimmed");
             chart.pointsLayer.appendChild(circle);
+        } else {
+            circle.classList.add("is-dimmed");
+            circle.classList.remove("is-highlighted");
         }
     });
 
