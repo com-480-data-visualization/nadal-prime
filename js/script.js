@@ -435,7 +435,7 @@ function createEraRankingChart(container, rankingData, era, meta) {
 
     const width = Math.max(container.clientWidth || 620, 360);
     const height = Math.max(container.clientHeight || 320, 280);
-    const margin = { top: 42, right: 172, bottom: 78, left: 48 };
+    const margin = { top: 42, right: 140, bottom: 78, left: 48 };
     const innerWidth = width - margin.left - margin.right;
     const innerHeight = height - margin.top - margin.bottom;
     const range = getRankingYearRange(era, meta);
@@ -670,14 +670,14 @@ function addRankingLegend(svg, players, x, y) {
         appendSvg(svg, "line", {
             class: "ranking-legend-swatch",
             x1: x,
-            x2: x + 15,
+            x2: x + 10,
             y1: rowY,
             y2: rowY,
             stroke: color
         });
         appendSvg(svg, "text", {
             class: "ranking-player-label",
-            x: x + 20,
+            x: x + 14,
             y: rowY + 4,
             fill: color
         }, formatRankingPlayerLabel(player.name));

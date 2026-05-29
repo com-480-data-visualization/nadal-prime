@@ -519,44 +519,6 @@ footer p {
 
 /* ==================== RESPONSIVE DESIGN ==================== */
 
-@media (max-width: 1024px) {
-    .era-section {
-        grid-template-columns: 1fr;
-        gap: 28px;
-        padding: 42px 0;
-    }
-
-    .era-section:nth-child(even) {
-        direction: ltr;
-    }
-
-    .era-right-section {
-        direction: ltr;
-    }
-
-    .era-box {
-        width: 100%;
-        max-width: 760px;
-        min-height: 260px;
-        margin: 0 auto;
-    }
-
-    .era-right-section {
-        min-height: 280px;
-    }
-
-    .era-description {
-        min-height: 280px;
-    }
-
-    .landing-title {
-        font-size: 2.5rem;
-    }
-
-    .landing-subtitle {
-        font-size: 1.2rem;
-    }
-}
 
 @media (max-width: 768px) {
     .landing-title {
@@ -889,48 +851,6 @@ footer p {
 .sankey-link.s7 { stroke: rgba(100, 129, 211, 0.5); stroke-width: 16; }
 .sankey-link.s8 { stroke: rgba(82, 111, 194, 0.46); stroke-width: 12; }
 
-@media (max-width: 1180px) {
-    .era-main-section {
-        grid-template-columns: 200px minmax(0, 1fr) minmax(0, 1fr);
-    }
-
-    .era-main-card {
-        min-height: 300px;
-    }
-}
-
-@media (max-width: 980px) {
-    .era-main-container {
-        padding: 40px 18px 70px;
-    }
-
-    .era-main-section {
-        grid-template-columns: 1fr;
-        gap: 12px;
-        padding: 18px 0;
-    }
-
-    .era-main-section::before {
-        left: 0;
-    }
-
-    .era-main-timeline {
-        padding-left: 34px;
-        min-height: 86px;
-    }
-
-    .era-main-timeline h3 {
-        font-size: 1.2rem;
-    }
-
-    .era-main-trend {
-        font-size: 0.88rem;
-    }
-
-    .era-main-card {
-        min-height: 260px;
-    }
-}
 
 /* ==================== PLAYSTYLE SCROLLYTELLING ==================== */
 
@@ -1009,8 +929,8 @@ footer p {
 
 .scrolly-rally {
     display: grid;
-    grid-template-columns: 92px minmax(0, 1fr);
-    gap: 34px;
+    grid-template-columns: 72px minmax(0, 1fr);
+    gap: 20px;
     align-items: start;
     max-width: 1600px;
     margin: 0 auto;
@@ -1085,9 +1005,9 @@ footer p {
 .rally-date {
     display: grid;
     justify-items: center;
-    gap: 9px;
+    gap: 6px;
     color: #6b665e;
-    font-size: 0.78rem;
+    font-size: 0.68rem;
     font-weight: 800;
     letter-spacing: 0.08em;
     line-height: 1;
@@ -1102,7 +1022,7 @@ footer p {
 .date-rule {
     display: block;
     width: 1px;
-    height: 34px;
+    height: 24px;
     background: currentColor;
     opacity: 0.48;
 }
@@ -1148,7 +1068,7 @@ footer p {
 
 .rally-charts {
     display: grid;
-    grid-template-columns: minmax(0, 1.14fr) minmax(0, 0.86fr);
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
     gap: 30px;
 }
 
@@ -1563,7 +1483,7 @@ footer p {
     margin-bottom: 2px;
 }
 
-@media (max-width: 1180px) {
+@media (max-width: 700px) {
     .scrolly-rally {
         grid-template-columns: 1fr;
     }
@@ -1588,9 +1508,7 @@ footer p {
         position: relative;
         top: auto;
     }
-}
 
-@media (max-width: 860px) {
     .playstyle-container {
         padding: 42px 16px 18px;
     }
@@ -1648,4 +1566,26 @@ footer p {
     r: 5.4px;
     stroke: #101622;
     stroke-width: 1.6px;
+}
+
+.viewport-warning {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: #fbfaf5;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    text-align: center;
+    font-family: Georgia, serif;
+    font-size: 1.1rem;
+    color: #565656;
+    line-height: 1.7;
+}
+
+@media (max-width: 700px) {
+    .viewport-warning {
+        display: flex;
+    }
 }
